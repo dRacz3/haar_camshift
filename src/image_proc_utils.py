@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import time
+import pyautogui
 
 
 class background_remover():
@@ -86,10 +87,7 @@ def applyConvexHull(inputimg, originalImg = None, showIO = False):
             if(area>max_area):
                 max_area=area
                 ci=i
-    try:
-        cnt=contours[ci]
-    except Exception as e:
-        print(e)
+    cnt=contours[ci]
     hull = cv2.convexHull(cnt)
     moments = cv2.moments(cnt)
     if moments['m00']!=0:
@@ -108,45 +106,68 @@ def applyConvexHull(inputimg, originalImg = None, showIO = False):
     cnt = cv2.approxPolyDP(cnt,0.01*cv2.arcLength(cnt,True),True)
     hull = cv2.convexHull(cnt,returnPoints = False)
 
-    if(1):
-               defects = cv2.convexityDefects(cnt,hull)
-               mind=0
-               maxd=0
-               for i in range(defects.shape[0]):
-                    s,e,f,d = defects[i,0]
-                    start = tuple(cnt[s][0])
-                    end = tuple(cnt[e][0])
-                    far = tuple(cnt[f][0])
-                    dist = cv2.pointPolygonTest(cnt,centr,True)
-                    cv2.line(img,start,end,[0,255,0],2)
-                    cv2.line(frame,start,end,[0,255,0],2)
 
-                    cv2.circle(img,far,5,[0,0,255],-1)
-                    cv2.circle(frame,far,5,[0,0,255],-1)
-               print(i)
-               i=0
+    defects = cv2.convexityDefects(cnt,hull)
+    mind=0
+    maxd=0
+    for i in range(defects.shape[0]):
+        s,e,f,d = defects[i,0]
+        start = tuple(cnt[s][0])
+        end = tuple(cnt[e][0])
+        far = tuple(cnt[f][0])
+        dist = cv2.pointPolygonTest(cnt,centr,True)
+        cv2.line(img,start,end,[0,255,0],2)
+        cv2.line(frame,start,end,[0,255,0],2)
+
+        cv2.circle(img,far,5,[0,0,255],-1)
+        cv2.circle(frame,far,5,[0,0,255],-1)
+    print(i)
 
     if showIO:
         cv2.imshow('convexHUll', frame)
 
-
-
         hsv_tuning = 'Tuner'
         th_window_name = 'Threshold_tuner'
 
+    return cx,cy, i
+
+
 
 class mouseMotionManager():
-    def __init__(self):
-        pass
+    def __init__(self, frame):
+        self.sizeX, self.sizeY = pyautogui.size()
+        self.height, self.width, channels = frame.shape
+        self.pointsT1m = 0
 
-    def move(self, x, y, imageSize):
-        sizeX, sizeY = pyautogui.size()
-        height, width, channels = frame.shape
-        screenX = (x/height) * sizeX
-        screenY = (y/width) *sizeY
-        dx = (sizeX-screenX)-mouseX #flip image..
+        self.x_offset = 0.4 * self.sizeX
+        self.y_offset = 0.4 * self.sizeY
+
+    def calc_mapped_values(self, x,y):
+        x_new = (x + self.x_offset) / (1 + self.x_offset)
+        y_new = (y + self.y_offset) / (1 + self.y_offset)
+        x_new *= self.sizeX
+        y_new *= self.sizeY
+        return x_new, y_new
+
+    def move(self, x, y, points = 0):
+        mouseX, mouseY = pyautogui.position()
+        screenX = (x/self.height) * self.sizeX
+        screenY = (y/self.width) * self.sizeY
+#        screenX, screenY = self.calc_mapped_values(x,y)
+
+#        print("before: ({0}|{1}) -> after :({2}|{3})".format(x,y,screenX,screenY))
+        dx = (self.sizeX-screenX)-mouseX #flip image..
         dy = screenY-mouseY
 
         kp = 0.8
 
         pyautogui.moveRel(dx*kp, dy*kp)
+        if (points != self.pointsT1m):
+            if points < 2:
+                pyautogui.click(button='left')
+                print('Mouse click!!')
+            self.pointsT1m = points
+
+    def release(self):
+        pass
+        #pyautogui.mouseUp(button='right')

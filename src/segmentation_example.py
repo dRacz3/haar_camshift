@@ -3,7 +3,7 @@ import cv2
 
 import logging
 
-from image_proc_utils import applyConvexHull
+from image_proc_utils import applyConvexHull, mouseMotionManager
 
 def nothing(x):
     pass
@@ -78,14 +78,16 @@ cap = cv2.VideoCapture(0)
 bgSubThreshold = 50
 bgModel = cv2.createBackgroundSubtractorKNN(1000, bgSubThreshold )
 
+ret, frame = cap.read()
+mouseManager = mouseMotionManager(frame)
 
 while(True):
     # Capture frame-by-frame
     ret, frame = cap.read()
-    frame_no_bg = removeBackground(bgModel,frame, showIO = True)
+    frame_no_bg = removeBackground(bgModel,frame, showIO = False)
 
-    edges = cv2.Canny(frame_no_bg,100,100)
-    cv2.imshow('edges', edges)
+#    edges = cv2.Canny(frame_no_bg,100,100)
+#    cv2.imshow('edges', edges)
 
 
     # Converting to HUE-SATURATION image
@@ -100,22 +102,25 @@ while(True):
     binary_thresholded = gray_treshold(gray)
 
     gray_binary_stack = np.hstack((gray,binary_thresholded))
-    cv2.imshow("gray_binary_stack", gray_binary_stack)
+    #cv2.imshow("gray_binary_stack", gray_binary_stack)
 
     kernel_close = np.ones((1,1),np.uint8)
     kernel = np.ones((1,1),np.uint8)
     kernel_erode = np.ones((5,5),np.uint8)
-    erode = cv2.erode(gray, kernel_erode, iterations  = 3)
+    erode = cv2.erode(binary_thresholded, kernel_erode, iterations  = 3)
     closing = cv2.morphologyEx(erode, cv2.MORPH_CLOSE, kernel)
     #valami = cv2.morphologyEx(closing, cv2.MORPH_GRADIENT, kernel)
     try:
-        applyConvexHull(binary_thresholded, originalImg = frame ,showIO = True)
+        cx, cy, points = applyConvexHull(closing, originalImg = frame ,showIO = False)
+        mouseManager.move(cx,cy, points)
     except Exception as e:
         print(e)
+        #mouseManager.release()
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # When everything done, release the capture
 cap.release()
+mouseManager.release()
 cv2.destroyAllWindows()
