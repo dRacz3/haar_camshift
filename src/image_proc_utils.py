@@ -1,4 +1,4 @@
-import cv2 as cv
+import cv2
 import numpy as np
 import time
 
@@ -8,15 +8,15 @@ class background_remover():
         #Background subtraction
         self.threshold = binaryTreshold  #  BINARY threshold
         self.bgSubThreshold = subTreshold
-        self.bgModel = cv.createBackgroundSubtractorKNN(0, self.bgSubThreshold)
+        self.bgModel = cv2.createBackgroundSubtractorKNN(0, self.bgSubThreshold)
 
     #This function removes the background from a given frame via the KNN algorithm
     def remove_bg(self, frame):
         fgmask = self.bgModel.apply(frame)
-        fgmask = cv.medianBlur(fgmask, 15)
-        cv.imshow('fgmask', fgmask)
+        fgmask = cv2.medianBlur(fgmask, 15)
+        cv2.imshow('fgmask', fgmask)
 
-        frame_without_bg = cv.bitwise_and(frame, frame, mask=fgmask)
+        frame_without_bg = cv2.bitwise_and(frame, frame, mask=fgmask)
         return frame_without_bg
 
 class camshift_tracker():
@@ -26,47 +26,127 @@ class camshift_tracker():
         self.track_window = (c,r,w,h)
         # set up the ROI for tracking # -> bounding box
         roi = initial_frame[r:r+h, c:c+w]
-        hsv_roi =  cv.cvtColor(roi, cv.COLOR_BGR2HSV)
-        mask = cv.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
-        self.roi_hist = cv.calcHist([hsv_roi],[0],mask,[180],[0,180])
-        cv.normalize(self.roi_hist,self.roi_hist,0,255,cv.NORM_MINMAX)
+        hsv_roi =  cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
+        self.roi_hist = cv2.calcHist([hsv_roi],[0],mask,[180],[0,180])
+        cv2.normalize(self.roi_hist,self.roi_hist,0,255,cv2.NORM_MINMAX)
         # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
-        self.term_crit = ( cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 5, 10 )
+        self.term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 5, 10 )
 
     def process(self, frame):
-        hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-        dst = cv.calcBackProject([hsv],[0],self.roi_hist,[0,180],1)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        dst = cv2.calcBackProject([hsv],[0],self.roi_hist,[0,180],1)
         # apply meanshift to get the new location
-        self.ret, self.track_window = cv.CamShift(dst, self.track_window, self.term_crit)
+        self.ret, self.track_window = cv2.CamShift(dst, self.track_window, self.term_crit)
         drawing = self.draw_on_img(frame)
         return drawing
 
     def draw_on_img(self,frame):
         # Draw it on image
-        pts = cv.boxPoints(self.ret)
+        pts = cv2.boxPoints(self.ret)
         pts = np.int0(pts)
-        img2 = cv.polylines(frame,[pts],True, 255,2)
+        img2 = cv2.polylines(frame,[pts],True, 255,2)
         return img2
 
 class haar_classifier():
     def __init__(self, cascPath):
-        self.Cascade = cv.CascadeClassifier(cascPath)
+        self.Cascade = cv2.CascadeClassifier(cascPath)
 
     def process(self, frame):
-        gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         results = self.Cascade.detectMultiScale(
             gray,
             scaleFactor=1.2,
             minNeighbors=26,
             minSize=(10, 40),
             maxSize = (120, 300),
-            flags=cv.CASCADE_FIND_BIGGEST_OBJECT
+            flags=cv2.CASCADE_FIND_BIGGEST_OBJECT
         )
-        cv.imshow('gray_haar', self.draw_on_img(gray, results))
+        cv2.imshow('gray_haar', self.draw_on_img(gray, results))
         return results
 
     def draw_on_img(self,frame, results):
         for (x, y, w, h) in results:
-            cv.circle(frame,(int(x + w/2) ,int(y + h/2)), 10, (0,0,255), -1)
-            cv.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv2.circle(frame,(int(x + w/2) ,int(y + h/2)), 10, (0,0,255), -1)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
         return frame
+
+
+def applyConvexHull(inputimg, originalImg = None, showIO = False):
+    #COUNTOUR DETECTION
+    frame = originalImg
+    inputimg = cv2.bitwise_not(inputimg)
+    img, contours, hierarchy = cv2.findContours(inputimg,cv2.RETR_EXTERNAL ,cv2.CHAIN_APPROX_SIMPLE)
+    drawing = np.zeros(img.shape,np.uint8)
+
+    max_area=0
+    for i in range(len(contours)):
+            cnt=contours[i]
+            area = cv2.contourArea(cnt)
+            if(area>max_area):
+                max_area=area
+                ci=i
+    try:
+        cnt=contours[ci]
+    except Exception as e:
+        print(e)
+    hull = cv2.convexHull(cnt)
+    moments = cv2.moments(cnt)
+    if moments['m00']!=0:
+                cx = int(moments['m10']/moments['m00']) # cx = M10/M00
+                cy = int(moments['m01']/moments['m00']) # cy = M01/M00
+
+    centr=(cx,cy)
+    cv2.circle(img,centr,5,[0,0,255],2)
+    cv2.drawContours(drawing,[cnt],0,(0,255,0),2)
+    cv2.drawContours(drawing,[hull],0,(0,0,255),2)
+
+    cv2.circle(frame,centr,5,[0,0,255],2)
+    cv2.drawContours(drawing,[cnt],0,(0,255,0),2)
+    cv2.drawContours(drawing,[hull],0,(0,0,255),2)
+
+    cnt = cv2.approxPolyDP(cnt,0.01*cv2.arcLength(cnt,True),True)
+    hull = cv2.convexHull(cnt,returnPoints = False)
+
+    if(1):
+               defects = cv2.convexityDefects(cnt,hull)
+               mind=0
+               maxd=0
+               for i in range(defects.shape[0]):
+                    s,e,f,d = defects[i,0]
+                    start = tuple(cnt[s][0])
+                    end = tuple(cnt[e][0])
+                    far = tuple(cnt[f][0])
+                    dist = cv2.pointPolygonTest(cnt,centr,True)
+                    cv2.line(img,start,end,[0,255,0],2)
+                    cv2.line(frame,start,end,[0,255,0],2)
+
+                    cv2.circle(img,far,5,[0,0,255],-1)
+                    cv2.circle(frame,far,5,[0,0,255],-1)
+               print(i)
+               i=0
+
+    if showIO:
+        cv2.imshow('convexHUll', frame)
+
+
+
+        hsv_tuning = 'Tuner'
+        th_window_name = 'Threshold_tuner'
+
+
+class mouseMotionManager():
+    def __init__(self):
+        pass
+
+    def move(self, x, y, imageSize):
+        sizeX, sizeY = pyautogui.size()
+        height, width, channels = frame.shape
+        screenX = (x/height) * sizeX
+        screenY = (y/width) *sizeY
+        dx = (sizeX-screenX)-mouseX #flip image..
+        dy = screenY-mouseY
+
+        kp = 0.8
+
+        pyautogui.moveRel(dx*kp, dy*kp)

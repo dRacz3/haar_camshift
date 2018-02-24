@@ -3,64 +3,11 @@ import cv2
 
 import logging
 
+from image_proc_utils import applyConvexHull
+
 def nothing(x):
     pass
 
-def applyConvexHull(inputimg, originalImg = None, showIO = False):
-    #COUNTOUR DETECTION
-    frame = originalImg
-    img, contours, hierarchy = cv2.findContours(inputimg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    drawing = np.zeros(img.shape,np.uint8)
-
-    max_area=0
-    for i in range(len(contours)):
-            cnt=contours[i]
-            area = cv2.contourArea(cnt)
-            if(area>max_area):
-                max_area=area
-                ci=i
-    try:
-        cnt=contours[ci]
-    except Exception as e:
-        print(e)
-    hull = cv2.convexHull(cnt)
-    moments = cv2.moments(cnt)
-    if moments['m00']!=0:
-                cx = int(moments['m10']/moments['m00']) # cx = M10/M00
-                cy = int(moments['m01']/moments['m00']) # cy = M01/M00
-
-    centr=(cx,cy)
-    cv2.circle(img,centr,5,[0,0,255],2)
-    cv2.drawContours(drawing,[cnt],0,(0,255,0),2)
-    cv2.drawContours(drawing,[hull],0,(0,0,255),2)
-
-    cv2.circle(frame,centr,5,[0,0,255],2)
-    cv2.drawContours(drawing,[cnt],0,(0,255,0),2)
-    cv2.drawContours(drawing,[hull],0,(0,0,255),2)
-
-    cnt = cv2.approxPolyDP(cnt,0.01*cv2.arcLength(cnt,True),True)
-    hull = cv2.convexHull(cnt,returnPoints = False)
-
-    if(1):
-               defects = cv2.convexityDefects(cnt,hull)
-               mind=0
-               maxd=0
-               for i in range(defects.shape[0]):
-                    s,e,f,d = defects[i,0]
-                    start = tuple(cnt[s][0])
-                    end = tuple(cnt[e][0])
-                    far = tuple(cnt[f][0])
-                    dist = cv2.pointPolygonTest(cnt,centr,True)
-                    cv2.line(img,start,end,[0,255,0],2)
-                    cv2.line(frame,start,end,[0,255,0],2)
-
-                    cv2.circle(img,far,5,[0,0,255],-1)
-                    cv2.circle(frame,far,5,[0,0,255],-1)
-               print(i)
-               i=0
-
-    if showIO:
-        cv2.imshow('convexHUll', frame)
 
 hsv_tuning = 'Tuner'
 th_window_name = 'Threshold_tuner'
@@ -128,32 +75,32 @@ def applySegmentationBasedonHSV(img, showIO = False):
 create_tuner()
 cap = cv2.VideoCapture(0)
 
-bgSubThreshold = 100
-bgModel = cv2.createBackgroundSubtractorKNN(150, bgSubThreshold )
+bgSubThreshold = 50
+bgModel = cv2.createBackgroundSubtractorKNN(1000, bgSubThreshold )
+
 
 while(True):
     # Capture frame-by-frame
     ret, frame = cap.read()
     frame_no_bg = removeBackground(bgModel,frame, showIO = True)
-    # Converting to HUE-SATURATION image
-    #segmentedImg = applySegmentationBasedonHSV(frame, showIO = True)
 
-    cv2.imshow("skinMask", skinMask)
-    segmentedImg = frame
+    edges = cv2.Canny(frame_no_bg,100,100)
+    cv2.imshow('edges', edges)
+
+
+    # Converting to HUE-SATURATION image
+    segmentedImg = applySegmentationBasedonHSV(frame_no_bg, showIO = False)
     normal = cv2.cvtColor(segmentedImg, cv2.COLOR_HSV2RGB)
     hsv_rgb_stack = np.hstack((segmentedImg,normal))
-    cv2.imshow("hsv-> rgb", hsv_rgb_stack)
-
+    #cv2.imshow("hsv-> rgb", hsv_rgb_stack)
 
     # Making it greyscale
-    gray = cv2.cvtColor(normal, cv2.COLOR_RGB2GRAY)
-    cv2.imshow('RGB->Gray', gray)
-    gray = cv2.GaussianBlur(gray, (5, 5), 1, 1)
+    gray = cv2.cvtColor(frame_no_bg, cv2.COLOR_RGB2GRAY)
+    gray = cv2.GaussianBlur(gray, (1, 1), 1, 1)
+    binary_thresholded = gray_treshold(gray)
 
-
-
-    #thresholded_img = gray_treshold(gray)
-    cv2.imshow(th_window_name, gray)
+    gray_binary_stack = np.hstack((gray,binary_thresholded))
+    cv2.imshow("gray_binary_stack", gray_binary_stack)
 
     kernel_close = np.ones((1,1),np.uint8)
     kernel = np.ones((1,1),np.uint8)
@@ -162,7 +109,7 @@ while(True):
     closing = cv2.morphologyEx(erode, cv2.MORPH_CLOSE, kernel)
     #valami = cv2.morphologyEx(closing, cv2.MORPH_GRADIENT, kernel)
     try:
-        applyConvexHull(gray, originalImg = frame ,showIO = True)
+        applyConvexHull(binary_thresholded, originalImg = frame ,showIO = True)
     except Exception as e:
         print(e)
 
