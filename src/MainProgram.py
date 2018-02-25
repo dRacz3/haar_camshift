@@ -23,6 +23,7 @@ class program(object):
     # process one frame
     def ProcessOneMoreFrame(self):
         ret, frame = self.camera.read()
+        frame = self.operations.flipImage(frame)
         result = self.process(frame)
 
         compareResult = np.hstack((frame, result))

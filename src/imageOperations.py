@@ -7,7 +7,7 @@ import logging
 class ImageOperations(object):
     def __init__(self):
         bgSubThreshold = 200
-        historyCount = 100
+        historyCount = 10
         self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
 
         self.trackerWindowName = "Tracker"
@@ -26,14 +26,20 @@ class ImageOperations(object):
     def removeBackground(self, image, showIO=False):
         # Get mask
         foregroundmask = self.backgroundModel.apply(image)
+        # Erode the mask to remove noise in the background
+        kernel = np.ones((5, 5), np.uint8)
+        erosion = cv2.erode(foregroundmask, kernel, iterations=1)
+        # Dilatation to get back the object
+        dilation = cv2.dilate(erosion, kernel, iterations=1)
+        gradient = cv2.morphologyEx(dilation, cv2.MORPH_GRADIENT, kernel)
         # Apply to original picture
-        result = cv2.bitwise_and(image, image, mask=foregroundmask)
+        result = cv2.bitwise_and(image, image, mask=gradient)
         if showIO:
             self.showIO(image, result, "removeBackgroundIO")
         return result, foregroundmask
 
     def flipImage(self, image):
-        pass
+        return np.fliplr(image)
 
     def imageThresholding(self, image, showIO=False):
         img = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
