@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import logging
+from imageOperations import ImageOperations
+
 
 class program(object):
     def __init__(self):
@@ -10,6 +12,8 @@ class program(object):
         self.logger.setLevel('DEBUG')
         self.logger.info("Program has been started!")
         self.camera = cv2.VideoCapture(0)
+
+        self.operations = ImageOperations()
 
 
     def release(self):
@@ -26,10 +30,9 @@ class program(object):
         compareResult = np.hstack((frame,result))
         cv2.imshow('Result frame', compareResult)
 
-
-
     def process(self, startingImage):
-        result = startingImage
+        result, mask = self.operations.removeBackground(startingImage, showIO = True)
+        result, mask = self.operations.imageThresholding(result, showIO = True)
         return result
 
 
