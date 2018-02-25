@@ -10,6 +10,9 @@ class ImageOperations(object):
         historyCount = 5
         self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
 
+        cascadePath = "haar_finger.xml"
+        self.CascadeClassifier = cv2.CascadeClassifier(cascadePath)
+
         self.hmin = 0
         self.smin = 171
         self.vmin = 200
@@ -106,6 +109,23 @@ class ImageOperations(object):
         if showIO:
             self.showIO(img, res, "color threshold")
         return res
+
+    def getHandViaHaarCascade(self, image, showIO=False):
+        results = self.CascadeClassifier.detectMultiScale(
+            image,
+            scaleFactor=1.1,
+            minNeighbors=15,
+            minSize=(10, 30),
+            maxSize=(50, 120),
+            flags=cv2.CASCADE_SCALE_IMAGE)
+
+        for (x, y, w, h) in results:
+            #        pyautogui.moveTo(sizeX-x*3,y*3)
+            cv2.circle(image, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
+    #        cv2.circle(frame, (x+w/2, y+h/2))
+            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if showIO:
+            cv2.imshow("Cascade result", image)
 
     def getConvexHulls(self, image, mask, showIO=False):
         #        inputimg = cv2.bitwise_not(inputimg)
