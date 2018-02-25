@@ -17,13 +17,30 @@ class ImageOperations(object):
         self.smax = 255
         self.vmax = 251
 
+        self.tunersAreCreated = False
         self.trackerWindowName = "Tracker"
+
+        self.hsv_tuning = "HSV Tuner"
+
         cv2.namedWindow(self.trackerWindowName)
         cv2.createTrackbar("threshold_tolerance", self.trackerWindowName, 150, 255, self.nothing)
+
+        self.create_tuner()
 
     # Basic utility
     def nothing(self, alsonothing):
         pass
+
+    def create_tuner(self):
+        # create trackbars for color change
+        self.tunersAreCreated = True
+        cv2.namedWindow(self.hsv_tuning)
+        cv2.createTrackbar('H_MIN', self.hsv_tuning, self.hmin, 255, self.nothing)
+        cv2.createTrackbar('S_MIN', self.hsv_tuning, self.smin, 255, self.nothing)
+        cv2.createTrackbar('V_MIN', self.hsv_tuning, self.vmin, 255, self.nothing)
+        cv2.createTrackbar('H_MAX', self.hsv_tuning, self.hmax, 255, self.nothing)
+        cv2.createTrackbar('S_MAX', self.hsv_tuning, self.smax, 255, self.nothing)
+        cv2.createTrackbar('V_MAX', self.hsv_tuning, self.vmax, 255, self.nothing)
 
     def showIO(self, inputImg, outputImg, name):
         stack = np.hstack((inputImg, outputImg))
@@ -69,14 +86,25 @@ class ImageOperations(object):
             cv2.imshow("adaptive image thresholding result", result)
         return result, thresh
 
-    def color_treshold(self, img, bgMask, showIO=False):
+    def color_treshold(self, img, showIO=False):
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        # define range of blue color in HSV
+
+        if self.tunersAreCreated:
+            self.hmin = cv2.getTrackbarPos('H_MIN', self.hsv_tuning)
+            self.smin = cv2.getTrackbarPos('S_MIN', self.hsv_tuning)
+            self.vmin = cv2.getTrackbarPos('V_MIN', self.hsv_tuning)
+            self.hmax = cv2.getTrackbarPos('H_MAX', self.hsv_tuning)
+            self.smax = cv2.getTrackbarPos('S_MAX', self.hsv_tuning)
+            self.vmax = cv2.getTrackbarPos('V_MAX', self.hsv_tuning)
+
+        # define range of desired color
         lower = np.array([self.hmin, self.smin, self.vmin])
         upper = np.array([self.hmax, self.smax, self.vmax])
         # Threshold the HSV image to get only blue colors
         mask = cv2.inRange(hsv, lower, upper)
         res = cv2.bitwise_and(img, img, mask=mask)
+        if showIO:
+            self.showIO(img, res, "color threshold")
         return res
 
     def getConvexHulls(self, image, mask, showIO=False):
