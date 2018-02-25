@@ -34,6 +34,7 @@ class program(object):
         # result, mask = self.operations.imageThresholding(result, showIO=True) # ->not used
         result, mask = self.operations.adaptiveImageThresholding(result, showIO=True)
         #self.operations.getConvexHulls(result, mask, showIO=True)
+        #self.operations.color_treshold(result, showIO=True)
         return result
 
     def run(self):
