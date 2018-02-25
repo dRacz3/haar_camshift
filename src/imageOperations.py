@@ -45,14 +45,26 @@ class ImageOperations(object):
             cv2.imshow("image thresholding result", thresh)
         return result, thresh
 
+    # Adaptive image threshold based on Gaussian method
+    # Returns: result RGB Picture, Mask
     def adaptiveImageThresholding(self, image, showIO=False):
         img = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 25, 22)
+        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 25, 12)
         result = cv2.bitwise_and(image, image, mask=thresh)
         if showIO:
             cv2.imshow("adaptive image thresholding result", thresh)
         return result, thresh
+
+    def getConvexHulls(self, image, mask, showIO=False):
+        #        inputimg = cv2.bitwise_not(inputimg)
+        img, contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if showIO:
+            drawing = np.zeros(img.shape, np.uint8)
+            hull = cv2.convexHull(contours[0])
+            cv2.drawContours(drawing, contours, 0, (0, 255, 0), 2)
+            cv2.drawContours(drawing, hull, 0, (0, 255, 255), 2)
+            cv2.imshow("convex hulls", drawing)
 
     def removeNoise(self, image, showIO=False):
         pass

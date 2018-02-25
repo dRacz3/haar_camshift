@@ -30,8 +30,9 @@ class program(object):
 
     def process(self, startingImage):
         result, mask = self.operations.removeBackground(startingImage, showIO=True)
-        #result, mask = self.operations.imageThresholding(result, showIO=True)
+        # result, mask = self.operations.imageThresholding(result, showIO=True) # ->not used
         result, mask = self.operations.adaptiveImageThresholding(result, showIO=True)
+        #self.operations.getConvexHulls(result, mask, showIO=True)
         return result
 
     def run(self):
