@@ -1,1 +1,7 @@
 src/__pycache__/
+*.jpg
+*.png
+*.gif
+src/downloads/
+downloads/
+cascade_training/
