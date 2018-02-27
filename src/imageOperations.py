@@ -128,7 +128,7 @@ class ImageOperations(object):
             cv2.imshow("Cascade result", image)
 
     def getConvexHulls(self, image, mask, showIO=False):
-        #        inputimg = cv2.bitwise_not(inputimg)
+        #        inputimg = cv2.bitwise_not(inputimg) #negate image
         img, contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if showIO:
             drawing = np.zeros(img.shape, np.uint8)
