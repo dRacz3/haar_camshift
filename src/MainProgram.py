@@ -13,6 +13,7 @@ class program(object):
         self.logger.info("Program has been started!")
         self.camera = cv2.VideoCapture(0)
         self.operations = ImageOperations()
+        self.isFound = False
 
     def release(self):
         # When everything done, release the capture
@@ -33,7 +34,13 @@ class program(object):
         result, mask = self.operations.removeBackground(startingImage, showIO=True)
         # result, mask = self.operations.imageThresholding(result, showIO=True) # ->not used
         result, mask = self.operations.adaptiveImageThresholding(result, showIO=True)
-        self.operations.getHandViaHaarCascade(result, showIO=True)
+        fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
+        if not self.isFound and fingers_results is not None:
+            self.logger.info("fingers not found yet, finger results aint none either")
+            self.isFound, initial_location = self.operations.evaluateIfHandisFound(fingers_results)
+        # if self.isFound:
+            #self.logger.info("fingers found! goin to cam shift! isFound? :{0}".format(self.isFound), )
+            #self.operations.applyCamShift(result, initial_location)
         #self.operations.color_treshold(result, showIO=True)
         #self.operations.getConvexHulls(result, mask, showIO=True)
         return result
