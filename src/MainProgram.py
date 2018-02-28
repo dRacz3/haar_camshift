@@ -31,15 +31,16 @@ class program(object):
         cv2.imshow('Result frame', compareResult)
 
     def process(self, startingImage):
-        result, mask = self.operations.removeBackground(startingImage, showIO=True)
+        result, mask = self.operations.removeBackground(startingImage, showIO=False)
         # result, mask = self.operations.imageThresholding(result, showIO=True) # ->not used
-        result, mask = self.operations.adaptiveImageThresholding(result, showIO=True)
+        result, mask = self.operations.adaptiveImageThresholding(result, showIO=False)
         fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
         if not self.isFound and fingers_results is not None:
-            self.logger.info("fingers not found yet, finger results aint none either")
-            self.isFound, initial_location = self.operations.evaluateIfHandisFound(fingers_results)
-        # if self.isFound:
-            #self.logger.info("fingers found! goin to cam shift! isFound? :{0}".format(self.isFound), )
+            pass
+        self.isFound, self.initial_location = self.operations.evaluateIfHandisFound(fingers_results)
+        if self.isFound:
+            self.operations.showAverageLocation(result, self.initial_location)
+            self.logger.info("UNGABUNGA")
             #self.operations.applyCamShift(result, initial_location)
         #self.operations.color_treshold(result, showIO=True)
         #self.operations.getConvexHulls(result, mask, showIO=True)

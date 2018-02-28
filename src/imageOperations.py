@@ -4,6 +4,56 @@ from matplotlib import pyplot as plt
 import logging
 
 
+class camShiftTracker(object):
+    def __init__(self):
+        self.initial_location = None
+        self.track_window = None
+        self.w = 150
+        self.h = 150
+
+        # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
+        self.term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
+        self.gotValidStuffToTrack = False
+
+    def setupFrameAroundValidArea(self, image, initial_location):
+        self.initial_location = initial_location
+        x = self.initial_location[0]
+        y = self.initial_location[1]
+
+        self.track_window = (x - self.w / 2, y - self.h / 2, self.w / 2, self.h / 2)
+        # set up the ROI for tracking
+        roi = image[x - round(self.w / 2):(x + round(self.w / 2)), y - round(self.h / 2):(y + round(self.h / 2))]
+        hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        lower = np.array([0, 60, 32])
+        upper = np.array([180, 255, 255])
+        mask = cv2.inRange(hsv_roi, lower, upper)
+        self.roi_hist = cv2.calcHist([hsv_roi], [0], mask, [180], [0, 180])
+        cv2.normalize(self.roi_hist, self.roi_hist, 0, 255, cv2.NORM_MINMAX)
+        self.gotValidStuffToTrack = True
+        print('Camshift got initialized!')
+
+    def applyCamShift(self, image, initial_location, showIO=False):
+        print('Camshift application is called yay!')
+        # When we get a new valid initial_location get the data for tracking it later!
+        if self.initial_location is None and initial_location is not None:
+            self.setupFrameAroundValidArea(image, initial_location)
+        # If we have something to track -> Do it
+        if self.gotValidStuffToTrack:
+            # LOOPED
+            hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            dst = cv2.calcBackProject([hsv], [0], self.roi_hist, [0, 180], 1)
+            print('dst: ', dst)
+            # apply meanshift to get the new location
+            ret, self.track_window = cv2.CamShift(dst, self.track_window, self.term_crit)
+
+            # Draw it on image
+            pts = cv2.boxPoints(ret)
+            pts = np.int0(pts)
+            img2 = cv2.polylines(frame, [pts], True, 255, 2)
+            cv2.imshow('Camshift', img2)
+# END LOOP
+
+
 class ImageOperations(object):
     def __init__(self):
         bgSubThreshold = 100
@@ -32,6 +82,8 @@ class ImageOperations(object):
 
         self.create_tuner()
         self.initial_location = None
+
+        self.camShiftTracker = camShiftTracker()
 
     # Basic utility
     def nothing(self, alsonothing):
@@ -153,35 +205,6 @@ class ImageOperations(object):
         if showIO:
             cv2.imshow("Face Cascade result", img)
 
-    def applyCamShift(self, image, initial_location, showIO=False):
-        # setup initial location of window
-        if self.initial_location is None:
-            self.initial_location = initial_location
-
-        for (r, h, c, w) in self.initial_location:
-            self.track_window = (c, r, w, h)
-
-        # set up the ROI for tracking
-        roi = frame[r:r + h, c:c + w]
-        hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv_roi, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
-        roi_hist = cv2.calcHist([hsv_roi], [0], mask, [180], [0, 180])
-        cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
-
-        # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
-        term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
-
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        dst = cv2.calcBackProject([hsv], [0], roi_hist, [0, 180], 1)
-
-        # apply meanshift to get the new location
-        ret, self.track_window = cv2.CamShift(dst, track_window, term_crit)
-
-        # Draw it on image
-        pts = cv2.boxPoints(ret)
-        pts = np.int0(pts)
-        img2 = cv2.polylines(frame, [pts], True, 255, 2)
-        cv2.imshow('Camshift', img2)
 ##
 
     def evaluateIfHandisFound(self, fingers_results):
@@ -191,7 +214,7 @@ class ImageOperations(object):
             for (x, y, w, h) in fingers_results:
                 foundFingers = foundFingers + 1
             # if we have more than 3 match, take avg, and say we found a hand
-            if foundFingers > 3:
+            if foundFingers > 2:
                 return True, self.calcAverageLocation(fingers_results)
         # If nothing valid is found say we didnt find it, and return none as position
         return False, None
@@ -207,6 +230,24 @@ class ImageOperations(object):
         x_avg = x_avg / count
         y_avg = y_avg / count
         return x, y
+
+    def showAverageLocation(self, image, roiframe):
+        if roiframe is not None:
+            x = roiframe[0]
+            y = roiframe[1] + 150
+            w = 150
+            h = 150
+            x1 = int(x - w / 2)
+            x2 = int(x + w / 2)
+            y1 = int(y - h / 2)
+            y2 = int(y + h / 2)
+
+            cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+            cv2.imshow("showAvgLoc", image)
+
+    def applyCamShift(self, image, initial_location, showIO=False):
+        print('apply camshift from ops!')
+        self.camShiftTracker.applyCamShift(image=image, initial_location=initial_location)
 
     def getConvexHulls(self, image, mask, showIO=False):
         #        inputimg = cv2.bitwise_not(inputimg) #negate image
