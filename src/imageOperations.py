@@ -15,30 +15,44 @@ class camShiftTracker(object):
         self.term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
         self.gotValidStuffToTrack = False
 
-    def setupFrameAroundValidArea(self, image, bounding_box):
-        print('setupFrameAroundValidArea -> YOU SHOULD SEE IT ONLY ONCE')
-        self.bounding_box = bounding_box
-        x1 = bounding_box[0]
-        x2 = bounding_box[1]
-        y1 = bounding_box[2]
-        y2 = bounding_box[3]
+    def reset(self):
+        self.bounding_box = None
+        self.track_window = None
+        self.w = 150
+        self.h = 150
 
-        self.track_window = (x1, y1, self.w, self.h)
-        # set up the ROI for tracking
-        roi = image[x1:x2, y1:y2]
-        hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        lower = np.array([0, 60, 32])
-        upper = np.array([180, 255, 255])
-        mask = cv2.inRange(hsv_roi, lower, upper)
-        self.roi_hist = cv2.calcHist([hsv_roi], [0], mask, [180], [0, 180])
-        cv2.normalize(self.roi_hist, self.roi_hist, 0, 255, cv2.NORM_MINMAX)
-        self.gotValidStuffToTrack = True
-        print('Camshift got initialized!')
+        # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
+        self.term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
+        self.gotValidStuffToTrack = False
+
+    def setupFrameAroundValidArea(self, image, bounding_box):
+        try:
+            print('setupFrameAroundValidArea -> YOU SHOULD SEE IT ONLY ONCE')
+            self.bounding_box = bounding_box
+            x1 = bounding_box[0]
+            x2 = bounding_box[1]
+            y1 = bounding_box[2]
+            y2 = bounding_box[3]
+
+            self.track_window = (x1, y1, self.w, self.h)
+            # set up the ROI for tracking
+            roi = image[x1:x2, y1:y2]
+            hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+            lower = np.array([0, 60, 32])
+            upper = np.array([180, 255, 255])
+            mask = cv2.inRange(hsv_roi, lower, upper)
+            self.roi_hist = cv2.calcHist([hsv_roi], [0], mask, [180], [0, 180])
+            cv2.normalize(self.roi_hist, self.roi_hist, 0, 255, cv2.NORM_MINMAX)
+            self.gotValidStuffToTrack = True
+            print('Camshift got initialized!')
+        except Exception as e:
+            self.reset()
+            print('Error while initializing: {0} ->Try moving your hand to the center'.format(e))
 
     def applyCamShift(self, image, bounding_box=None, showIO=False):
-        print('Camshift application is called yay!')
         # When we get a new valid initial_location get the data for tracking it later!
         if self.bounding_box is None and bounding_box is not None:
+            print('got valid values for hand bounding box, should initialize')
             self.setupFrameAroundValidArea(image, bounding_box)
         # If we have something to track -> Do it
         if self.gotValidStuffToTrack:
@@ -47,14 +61,32 @@ class camShiftTracker(object):
             dst = cv2.calcBackProject([hsv], [0], self.roi_hist, [0, 180], 1)
             # apply meanshift to get the new location
             ret, self.track_window = cv2.CamShift(dst, self.track_window, self.term_crit)
-            print('ret:', ret)
 
-            # Draw it on image
-            pts = cv2.boxPoints(ret)
-            pts = np.int0(pts)
-            img2 = cv2.polylines(image, [pts], True, 255, 2)
-            cv2.imshow('Camshift', img2)
-            # END LOOP
+            if showIO:
+                # Draw it on image
+                pts = cv2.boxPoints(ret)
+                pts = np.int0(pts)
+                img2 = cv2.polylines(image, [pts], True, 255, 2)
+
+            if self.checkIfPositionValid(image, ret):
+                return ret
+            else:
+                self.reset()
+                return None
+        # END LOOP
+
+    def checkIfPositionValid(self, image, ret):
+        boundingBoxSize = ret[1]  # contains width | height
+        imageShape = image.shape
+
+        # This prevents us from enlarging the bounding shape too much on accident
+        shapeFactor = 0.4
+        if(boundingBoxSize[0] > imageShape[0] * shapeFactor or boundingBoxSize[1] > imageShape[1] * shapeFactor):
+            return False
+        # This checks the position.. if we get no reading -> it is set to around zero
+        if(int(ret[0][0]) < 5 or int(ret[0][1]) < 5):
+            return False
+        return True
 
 
 class ImageOperations(object):
@@ -253,13 +285,24 @@ class ImageOperations(object):
 
     def applyCamShift(self, image, initial_location=None, showIO=False):
         # If the initial location passed is not none -> we have to initialize
+        result = None
         if initial_location is not None:
             # Get the ROI frame box, pass it on
+            print('Initial location has been passed, should initialize')
             boundingBox = self.getBoundingBox(initial_location[0], initial_location[1])
-            self.camShiftTracker.applyCamShift(image=image, bounding_box=boundingBox)
+            result = self.camShiftTracker.applyCamShift(image=image, bounding_box=boundingBox, showIO=showIO)
         else:
             # normal call should be this, when we are already initialized
-            self.camShiftTracker.applyCamShift(image=image)
+            result = self.camShiftTracker.applyCamShift(image=image, showIO=showIO)
+        # it means that we got a valid result!
+        if result is not None:
+            x = result[0][0]  # get center X
+            y = result[0][1]  # get center y
+            return (x, y)
+        return None
+
+    def resetCamShift(self):
+        self.camShiftTracker.reset()
 
     def getConvexHulls(self, image, mask, showIO=False):
         #        inputimg = cv2.bitwise_not(inputimg) #negate image

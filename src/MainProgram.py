@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import logging
 from imageOperations import ImageOperations
+from mouseMotionManager import mouseMotionManager
 
 
 class program(object):
@@ -14,6 +15,9 @@ class program(object):
         self.camera = cv2.VideoCapture(0)
         self.operations = ImageOperations()
         self.isFound = False
+
+        ret, frame = self.camera.read()
+        self.mouseMotionManager = mouseMotionManager(frame)
 
     def release(self):
         # When everything done, release the capture
@@ -36,21 +40,33 @@ class program(object):
         result, mask = self.operations.adaptiveImageThresholding(result, showIO=False)
         initial_location = None
         if not self.isFound:
+            self.logger.info("Still looking for fingers...")
             fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
             # if got results -> check if we got enough markers to say it's a hand
             if fingers_results is not None:
                 self.isFound, initial_location = self.operations.evaluateIfHandisFound(fingers_results)
+                self.logger.info(
+                    "Finger results contsains something, is it enough for to say its a hand? {0}".format(self.isFound))
         # if we got a new location in this round that means that it's the only time when it's not None
         # so we pass it to the camshift, and expect it to initialize itself on this ROI
+        camshift_result = None
         if initial_location is None:
             # Mostly  this should be called
-            self.operations.applyCamShift(result)
+            camshift_result = self.operations.applyCamShift(result, showIO=True)
         else:
             # Initializer calls only
-            self.operations.applyCamShift(result, initial_location)
-
-        #self.operations.color_treshold(result, showIO=True)
-        #self.operations.getConvexHulls(result, mask, showIO=True)
+            self.logger.info("Found new initial locations..should reinitialize camshift!")
+            camshift_result = self.operations.applyCamShift(result, initial_location)
+        if camshift_result is not None:
+            print('HAND LOCATION: {0}|{1}'.format(camshift_result[0], camshift_result[1]))
+            self.mouseMotionManager.move(camshift_result[0], camshift_result[1])
+            # Move mouse to location: camshift_result[0], camshift_result[1]!
+        else:
+            # if we got back nothing, it means we lost track of the object, we need to find it again via cascade
+            self.isFound = False
+            print('No hand can be detected')
+            #self.operations.color_treshold(result, showIO=True)
+            #self.operations.getConvexHulls(result, mask, showIO=True)
         return result
 
     def run(self):

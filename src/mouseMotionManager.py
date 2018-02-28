@@ -3,6 +3,7 @@ import numpy as np
 import time
 import pyautogui
 
+
 class mouseMotionManager():
     def __init__(self, frame):
         self.sizeX, self.sizeY = pyautogui.size()
@@ -12,28 +13,28 @@ class mouseMotionManager():
         self.x_offset = 0.4 * self.sizeX
         self.y_offset = 0.4 * self.sizeY
 
-    def calc_mapped_values(self, x,y):
+    def calc_mapped_values(self, x, y):
         x_new = (x + self.x_offset) / (1 + self.x_offset)
         y_new = (y + self.y_offset) / (1 + self.y_offset)
         x_new *= self.sizeX
         y_new *= self.sizeY
         return x_new, y_new
 
-    def move(self, x, y, points = 0):
+    def move(self, x, y, points=0):
         if x is None:
             return
         mouseX, mouseY = pyautogui.position()
-        screenX = (x/self.height) * self.sizeX
-        screenY = (y/self.width) * self.sizeY
+        screenX = (x / self.height) * self.sizeX
+        screenY = (y / self.width) * self.sizeY
 #        screenX, screenY = self.calc_mapped_values(x,y)
 
 #        print("before: ({0}|{1}) -> after :({2}|{3})".format(x,y,screenX,screenY))
-        dx = (self.sizeX-screenX)-mouseX #flip image..
-        dy = screenY-mouseY
+        dx = screenX - mouseX  # flip image..
+        dy = screenY - mouseY
 
         kp = 0.8
 
-        pyautogui.moveRel(dx*kp, dy*kp)
+        pyautogui.moveRel(dx * kp, dy * kp)
         if (points != self.pointsT1m):
             if points < 2:
                 pyautogui.click(button='left')
@@ -42,4 +43,4 @@ class mouseMotionManager():
 
     def release(self):
         pass
-        #pyautogui.mouseUp(button='right')
+        # pyautogui.mouseUp(button='right')
