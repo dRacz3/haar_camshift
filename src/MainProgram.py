@@ -58,13 +58,14 @@ class program(object):
             self.logger.info("Found new initial locations..should reinitialize camshift!")
             camshift_result = self.operations.applyCamShift(result, initial_location)
         if camshift_result is not None:
-            print('HAND LOCATION: {0}|{1}'.format(camshift_result[0], camshift_result[1]))
+            self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0], camshift_result[1]))
             self.mouseMotionManager.move(camshift_result[0], camshift_result[1])
             # Move mouse to location: camshift_result[0], camshift_result[1]!
         else:
             # if we got back nothing, it means we lost track of the object, we need to find it again via cascade
             self.isFound = False
-            print('No hand can be detected')
+            self.logger.debug("No hand can be detected..")
+
             #self.operations.color_treshold(result, showIO=True)
             #self.operations.getConvexHulls(result, mask, showIO=True)
         return result

@@ -83,6 +83,11 @@ class camShiftTracker(object):
         shapeFactor = 0.4
         if(boundingBoxSize[0] > imageShape[0] * shapeFactor or boundingBoxSize[1] > imageShape[1] * shapeFactor):
             return False
+
+        # This checks if the box gets too small, then we drop it
+        if(boundingBoxSize[0] < 30 and boundingBoxSize[1] < 30):
+            return False
+
         # This checks the position.. if we get no reading -> it is set to around zero
         if(int(ret[0][0]) < 5 or int(ret[0][1]) < 5):
             return False
@@ -91,14 +96,18 @@ class camShiftTracker(object):
 
 class ImageOperations(object):
     def __init__(self):
+
+        FORMAT = '%(asctime)-15s %(message)s'
+        logging.basicConfig(format=FORMAT)
+        self.logger = logging.getLogger('imageOperations')
+        self.logger.setLevel('DEBUG')
+
         bgSubThreshold = 100
-        historyCount = 25
+        historyCount = 15
         self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
 
         cascadePath = "haar_finger.xml"
         self.CascadeClassifier = cv2.CascadeClassifier(cascadePath)
-        faceCascadePath = 'haarcascade_frontalface_alt.xml'
-        self.FaceCascadeClassifier = cv2.CascadeClassifier(faceCascadePath)
 
         self.hmin = 0
         self.smin = 171
@@ -108,32 +117,10 @@ class ImageOperations(object):
         self.vmax = 251
 
         self.tunersAreCreated = False
-        self.trackerWindowName = "Tracker"
-
-        self.hsv_tuning = "HSV Tuner"
-
-        cv2.namedWindow(self.trackerWindowName)
-        cv2.createTrackbar("threshold_tolerance", self.trackerWindowName, 150, 255, self.nothing)
-
-        self.create_tuner()
         self.initial_location = None
 
         self.camShiftTracker = camShiftTracker()
-
-    # Basic utility
-    def nothing(self, alsonothing):
-        pass
-
-    def create_tuner(self):
-        # create trackbars for color change
-        self.tunersAreCreated = True
-        cv2.namedWindow(self.hsv_tuning)
-        cv2.createTrackbar('H_MIN', self.hsv_tuning, self.hmin, 255, self.nothing)
-        cv2.createTrackbar('S_MIN', self.hsv_tuning, self.smin, 255, self.nothing)
-        cv2.createTrackbar('V_MIN', self.hsv_tuning, self.vmin, 255, self.nothing)
-        cv2.createTrackbar('H_MAX', self.hsv_tuning, self.hmax, 255, self.nothing)
-        cv2.createTrackbar('S_MAX', self.hsv_tuning, self.smax, 255, self.nothing)
-        cv2.createTrackbar('V_MAX', self.hsv_tuning, self.vmax, 255, self.nothing)
+        self.logger.info("Image operations loaded and initialized!")
 
     def showIO(self, inputImg, outputImg, name):
         stack = np.hstack((inputImg, outputImg))
@@ -161,16 +148,6 @@ class ImageOperations(object):
     def flipImage(self, image):
         return np.fliplr(image)
 
-    def imageThresholding(self, image, showIO=False):
-        img = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        threshold = cv2.getTrackbarPos(
-            "threshold_tolerance", self.trackerWindowName)
-        ret, thresh = cv2.threshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 11, 2)
-        result = cv2.bitwise_and(image, image, mask=thresh)
-        if showIO:
-            cv2.imshow("image thresholding result", result)
-        return result, thresh
-
     # Adaptive image threshold based on Gaussian method
     # Returns: result RGB Picture, Mask
     def adaptiveImageThresholding(self, image, showIO=False):
@@ -180,27 +157,6 @@ class ImageOperations(object):
         if showIO:
             cv2.imshow("adaptive image thresholding result", result)
         return result, thresh
-
-    def color_treshold(self, img, showIO=False):
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-        if self.tunersAreCreated:
-            self.hmin = cv2.getTrackbarPos('H_MIN', self.hsv_tuning)
-            self.smin = cv2.getTrackbarPos('S_MIN', self.hsv_tuning)
-            self.vmin = cv2.getTrackbarPos('V_MIN', self.hsv_tuning)
-            self.hmax = cv2.getTrackbarPos('H_MAX', self.hsv_tuning)
-            self.smax = cv2.getTrackbarPos('S_MAX', self.hsv_tuning)
-            self.vmax = cv2.getTrackbarPos('V_MAX', self.hsv_tuning)
-
-        # define range of desired color
-        lower = np.array([self.hmin, self.smin, self.vmin])
-        upper = np.array([self.hmax, self.smax, self.vmax])
-        # Threshold the HSV image to get only blue colors
-        mask = cv2.inRange(hsv, lower, upper)
-        res = cv2.bitwise_and(img, img, mask=mask)
-        if showIO:
-            self.showIO(img, res, "color threshold")
-        return res
 
     # Returns the results of the haar cascade search, (x,y,w,h) packed to results
     def getHandViaHaarCascade(self, image, showIO=False):
@@ -233,9 +189,7 @@ class ImageOperations(object):
             flags=cv2.CASCADE_FIND_BIGGEST_OBJECT)
 
         for (x, y, w, h) in results:
-            #        pyautogui.moveTo(sizeX-x*3,y*3)
             cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (255, 0, 255), -1)
-    #        cv2.circle(frame, (x+w/2, y+h/2))
             cv2.rectangle(img, (x, y), (x + w, y + h), (255, 255, 0), 2)
         if showIO:
             cv2.imshow("Face Cascade result", img)
@@ -254,6 +208,8 @@ class ImageOperations(object):
         # If nothing valid is found say we didnt find it, and return none as position
         return False, None
 
+    # This function calculates the average location of all detected fingers
+    # TODO : Improve this by counting only local fingers as one, and neglect the others
     def calcAverageLocation(self, location_frames):
         x_avg = 0
         y_avg = 0
@@ -266,12 +222,15 @@ class ImageOperations(object):
         y_avg = y_avg / count
         return x, y
 
+    # Utility function to show the average location of fingers -> good guess for hand position
     def showAverageLocation(self, image, roiframe):
         if roiframe is not None:
             (x1, x2, y1, y2) = self.getBoundingBox(roiframe[0], roiframe[1])
             cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
             cv2.imshow("showAvgLoc", image)
 
+    # Quick calculation to get a given shaped box for center coordiantes
+    # WARNING : Hard coded width + height!
     def getBoundingBox(self, x, y):
         x = x
         y = y
@@ -283,6 +242,8 @@ class ImageOperations(object):
         y2 = int(y + h / 2)
         return x1, x2, y1, y2
 
+    # This algorithm applies the camShift algorithm if proper initial_location is given
+    # Or it has already been initialized and not lost track of the tracked object
     def applyCamShift(self, image, initial_location=None, showIO=False):
         # If the initial location passed is not none -> we have to initialize
         result = None
@@ -301,22 +262,6 @@ class ImageOperations(object):
             return (x, y)
         return None
 
+    # Utility to reset the camshift tracker
     def resetCamShift(self):
         self.camShiftTracker.reset()
-
-    def getConvexHulls(self, image, mask, showIO=False):
-        #        inputimg = cv2.bitwise_not(inputimg) #negate image
-        img, contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if showIO:
-            drawing = np.zeros(img.shape, np.uint8)
-            hull = cv2.convexHull(contours[0])
-            cv2.drawContours(drawing, contours, 0, (0, 255, 0), 2)
-            cv2.drawContours(drawing, hull, 0, (0, 255, 255), 2)
-            cv2.imshow("convex hulls", drawing)
-
-    def removeNoise(self, image, showIO=False):
-        pass
-
-    def blurFrame(self, image):
-        pass
-#        return result
