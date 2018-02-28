@@ -34,14 +34,21 @@ class program(object):
         result, mask = self.operations.removeBackground(startingImage, showIO=False)
         # result, mask = self.operations.imageThresholding(result, showIO=True) # ->not used
         result, mask = self.operations.adaptiveImageThresholding(result, showIO=False)
-        fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
-        if not self.isFound and fingers_results is not None:
-            pass
-        self.isFound, self.initial_location = self.operations.evaluateIfHandisFound(fingers_results)
-        if self.isFound:
-            self.operations.showAverageLocation(result, self.initial_location)
-            self.logger.info("UNGABUNGA")
-            #self.operations.applyCamShift(result, initial_location)
+        initial_location = None
+        if not self.isFound:
+            fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
+            # if got results -> check if we got enough markers to say it's a hand
+            if fingers_results is not None:
+                self.isFound, initial_location = self.operations.evaluateIfHandisFound(fingers_results)
+        # if we got a new location in this round that means that it's the only time when it's not None
+        # so we pass it to the camshift, and expect it to initialize itself on this ROI
+        if initial_location is None:
+            # Mostly  this should be called
+            self.operations.applyCamShift(result)
+        else:
+            # Initializer calls only
+            self.operations.applyCamShift(result, initial_location)
+
         #self.operations.color_treshold(result, showIO=True)
         #self.operations.getConvexHulls(result, mask, showIO=True)
         return result
