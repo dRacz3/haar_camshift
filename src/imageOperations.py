@@ -37,8 +37,8 @@ class camShiftTracker(object):
             # set up the ROI for tracking
             roi = image[x1:x2, y1:y2]
             hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-            lower = np.array([0, 60, 32])
-            upper = np.array([180, 255, 255])
+            lower = np.array([0, 60, 32], dtype=np.uint8)
+            upper = np.array([180, 255, 255], dtype=np.uint8)
             mask = cv2.inRange(hsv_roi, lower, upper)
             self.roi_hist = cv2.calcHist([hsv_roi], [0], mask, [180], [0, 180])
             cv2.normalize(self.roi_hist, self.roi_hist, 0, 255, cv2.NORM_MINMAX)
@@ -77,14 +77,18 @@ class camShiftTracker(object):
     def checkIfPositionValid(self, image, ret):
         boundingBoxSize = ret[1]  # contains width | height
         imageShape = image.shape
-
+        print("Bounding size is: ", boundingBoxSize)
         # This prevents us from enlarging the bounding shape too much on accident
         shapeFactor = 0.4
         if(boundingBoxSize[0] > imageShape[0] * shapeFactor or boundingBoxSize[1] > imageShape[1] * shapeFactor):
             return False
 
         # This checks if the box gets too small, then we drop it
-        if(boundingBoxSize[0] < 30 and boundingBoxSize[1] < 30):
+        if(boundingBoxSize[0] < 50 and boundingBoxSize[1] < 50):
+            return False
+
+        # Check if one size is much longer than the other.. it means we are not tracking tha palm
+        if(boundingBoxSize[0] > boundingBoxSize[1] * 2 or boundingBoxSize[1] > boundingBoxSize[0] * 2):
             return False
 
         # This checks the position.. if we get no reading -> it is set to around zero
@@ -97,7 +101,6 @@ class CascadeClassifierUtils(object):
     def __init__(self):
         cascadePath = "haar_finger.xml"
         self.CascadeClassifier = cv2.CascadeClassifier(cascadePath)
-        pass
 
     def evaluateIfHandisFound(self, fingers_results):
         if not len(fingers_results) == 0:  # Check if we got any result
@@ -143,6 +146,15 @@ class CascadeClassifierUtils(object):
         x2 = int(x + w / 2)
         y1 = int(y - h / 2)
         y2 = int(y + h / 2)
+
+        # normalize
+        if x1 < 0:
+            x1 = 0
+            x2 = x + w
+        if y1 < 0:
+            y1 = 0
+            y2 = y + h
+
         return x1, x2, y1, y2
 
     # Returns the results of the haar cascade search, (x,y,w,h) packed to results
@@ -151,15 +163,13 @@ class CascadeClassifierUtils(object):
         results = self.CascadeClassifier.detectMultiScale(
             image,
             scaleFactor=1.1,
-            minNeighbors=15,
+            minNeighbors=5,
             minSize=(20, 30),
             maxSize=(50, 120),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:
-            #        pyautogui.moveTo(sizeX-x*3,y*3)
             cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
-    #        cv2.circle(frame, (x+w/2, y+h/2))
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
         if showIO:
             cv2.imshow("Cascade result", img)
@@ -172,15 +182,11 @@ class ImageOperations(object):
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('imageOperations')
         self.logger.setLevel('DEBUG')
-
         bgSubThreshold = 100
-        historyCount = 15
+        historyCount = 2
         self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
-
         self.CascadeClassifierUtils = CascadeClassifierUtils()
-
         self.initial_location = None
-
         self.camShiftTracker = camShiftTracker()
         self.logger.info("Image operations loaded and initialized!")
 
