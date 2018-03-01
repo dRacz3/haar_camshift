@@ -37,7 +37,7 @@ class camShiftTracker(object):
             # set up the ROI for tracking
             roi = image[x1:x2, y1:y2]
             hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-            lower = np.array([0, 60, 32], dtype=np.uint8)
+            lower = np.array([40, 60, 32], dtype=np.uint8)
             upper = np.array([180, 255, 255], dtype=np.uint8)
             mask = cv2.inRange(hsv_roi, lower, upper)
             self.roi_hist = cv2.calcHist([hsv_roi], [0], mask, [180], [0, 180])
