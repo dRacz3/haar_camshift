@@ -93,107 +93,11 @@ class camShiftTracker(object):
         return True
 
 
-class ImageOperations(object):
+class CascadeClassifierUtils(object):
     def __init__(self):
-
-        FORMAT = '%(asctime)-15s %(message)s'
-        logging.basicConfig(format=FORMAT)
-        self.logger = logging.getLogger('imageOperations')
-        self.logger.setLevel('DEBUG')
-
-        bgSubThreshold = 100
-        historyCount = 15
-        self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
-
         cascadePath = "haar_finger.xml"
         self.CascadeClassifier = cv2.CascadeClassifier(cascadePath)
-
-        self.hmin = 0
-        self.smin = 171
-        self.vmin = 200
-        self.hmax = 194
-        self.smax = 255
-        self.vmax = 251
-
-        self.tunersAreCreated = False
-        self.initial_location = None
-
-        self.camShiftTracker = camShiftTracker()
-        self.logger.info("Image operations loaded and initialized!")
-
-    def showIO(self, inputImg, outputImg, name):
-        stack = np.hstack((inputImg, outputImg))
-        cv2.imshow(name, stack)
-
-    # Returns the resulting image, and the mask
-    def removeBackground(self, image, showIO=False):
-        # Get mask
-        foregroundmask = self.backgroundModel.apply(image)
-        # Apply gaussian filter to smoothen , then median to remove more noise from mask
-        gaussian = cv2.GaussianBlur(foregroundmask, (1, 1), 0)
-        # Erode the mask to remove noise in the background
-        erosion_kernel = np.ones((5, 5), np.uint8)
-        erosion = cv2.erode(gaussian, erosion_kernel, iterations=1)
-        # Dilatation to get back the object
-        dilation_kernel = np.ones((5, 5), np.uint8)
-        dilation = cv2.dilate(erosion, dilation_kernel, iterations=1)
-        # Apply to original picture
-        result = cv2.bitwise_and(image, image, mask=erosion)
-        if showIO:
-            self.showIO(image, result, "removeBackgroundIO")
-            # self.showIO(gaussian, median, 'Gaussian-Median filter effect on background')
-        return result, foregroundmask
-
-    def flipImage(self, image):
-        return np.fliplr(image)
-
-    # Adaptive image threshold based on Gaussian method
-    # Returns: result RGB Picture, Mask
-    def adaptiveImageThresholding(self, image, showIO=False):
-        img = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 25, 12)
-        result = cv2.bitwise_and(image, image, mask=thresh)
-        if showIO:
-            cv2.imshow("adaptive image thresholding result", result)
-        return result, thresh
-
-    # Returns the results of the haar cascade search, (x,y,w,h) packed to results
-    def getHandViaHaarCascade(self, image, showIO=False):
-        img = image.copy()
-        results = self.CascadeClassifier.detectMultiScale(
-            image,
-            scaleFactor=1.1,
-            minNeighbors=15,
-            minSize=(20, 30),
-            maxSize=(50, 120),
-            flags=cv2.CASCADE_SCALE_IMAGE)
-
-        for (x, y, w, h) in results:
-            #        pyautogui.moveTo(sizeX-x*3,y*3)
-            cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
-    #        cv2.circle(frame, (x+w/2, y+h/2))
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        if showIO:
-            cv2.imshow("Cascade result", img)
-        return results
-
-    def getFaceViaHaarCascade(self, image, showIO=False):
-        img = image.copy()
-        results = self.FaceCascadeClassifier.detectMultiScale(
-            image,
-            scaleFactor=1.1,
-            minNeighbors=15,
-            minSize=(20, 30),
-            maxSize=(50, 120),
-            flags=cv2.CASCADE_FIND_BIGGEST_OBJECT)
-
-        for (x, y, w, h) in results:
-            cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (255, 0, 255), -1)
-            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 255, 0), 2)
-        if showIO:
-            cv2.imshow("Face Cascade result", img)
-
-##
+        pass
 
     def evaluateIfHandisFound(self, fingers_results):
         if not len(fingers_results) == 0:  # Check if we got any result
@@ -241,6 +145,81 @@ class ImageOperations(object):
         y2 = int(y + h / 2)
         return x1, x2, y1, y2
 
+    # Returns the results of the haar cascade search, (x,y,w,h) packed to results
+    def getHandViaHaarCascade(self, image, showIO=False):
+        img = image.copy()
+        results = self.CascadeClassifier.detectMultiScale(
+            image,
+            scaleFactor=1.1,
+            minNeighbors=15,
+            minSize=(20, 30),
+            maxSize=(50, 120),
+            flags=cv2.CASCADE_SCALE_IMAGE)
+
+        for (x, y, w, h) in results:
+            #        pyautogui.moveTo(sizeX-x*3,y*3)
+            cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
+    #        cv2.circle(frame, (x+w/2, y+h/2))
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if showIO:
+            cv2.imshow("Cascade result", img)
+        return results
+
+
+class ImageOperations(object):
+    def __init__(self):
+        FORMAT = '%(asctime)-15s %(message)s'
+        logging.basicConfig(format=FORMAT)
+        self.logger = logging.getLogger('imageOperations')
+        self.logger.setLevel('DEBUG')
+
+        bgSubThreshold = 100
+        historyCount = 15
+        self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
+
+        self.CascadeClassifierUtils = CascadeClassifierUtils()
+
+        self.initial_location = None
+
+        self.camShiftTracker = camShiftTracker()
+        self.logger.info("Image operations loaded and initialized!")
+
+    def showIO(self, inputImg, outputImg, name):
+        stack = np.hstack((inputImg, outputImg))
+        cv2.imshow(name, stack)
+
+    # Returns the resulting image, and the mask
+    def removeBackground(self, image, showIO=False):
+        # Get mask
+        foregroundmask = self.backgroundModel.apply(image)
+        # Apply gaussian filter to smoothen , then median to remove more noise from mask
+        gaussian = cv2.GaussianBlur(foregroundmask, (1, 1), 0)
+        # Erode the mask to remove noise in the background
+        erosion_kernel = np.ones((5, 5), np.uint8)
+        erosion = cv2.erode(gaussian, erosion_kernel, iterations=1)
+        # Dilatation to get back the object
+        dilation_kernel = np.ones((5, 5), np.uint8)
+        dilation = cv2.dilate(erosion, dilation_kernel, iterations=1)
+        # Apply to original picture
+        result = cv2.bitwise_and(image, image, mask=erosion)
+        if showIO:
+            self.showIO(image, result, "removeBackgroundIO")
+            # self.showIO(gaussian, median, 'Gaussian-Median filter effect on background')
+        return result, foregroundmask
+
+    def flipImage(self, image):
+        return np.fliplr(image)
+
+    # Adaptive image threshold based on Gaussian method
+    # Returns: result RGB Picture, Mask
+    def adaptiveImageThresholding(self, image, showIO=False):
+        img = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        thresh = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 25, 12)
+        result = cv2.bitwise_and(image, image, mask=thresh)
+        if showIO:
+            cv2.imshow("adaptive image thresholding result", result)
+        return result, thresh
+
     # This algorithm applies the camShift algorithm if proper initial_location is given
     # Or it has already been initialized and not lost track of the tracked object
     def applyCamShift(self, image, initial_location=None, showIO=False):
@@ -249,7 +228,7 @@ class ImageOperations(object):
         if initial_location is not None:
             # Get the ROI frame box, pass it on
             print('Initial location has been passed, should initialize')
-            boundingBox = self.getBoundingBox(initial_location[0], initial_location[1])
+            boundingBox = self.CascadeClassifierUtils.getBoundingBox(initial_location[0], initial_location[1])
             result = self.camShiftTracker.applyCamShift(image=image, bounding_box=boundingBox, showIO=showIO)
         else:
             # normal call should be this, when we are already initialized
@@ -260,6 +239,9 @@ class ImageOperations(object):
             y = result[0][1]  # get center y
             return (x, y)
         return None
+
+    def getHandViaHaarCascade(self, image, showIO=False):
+        return self.CascadeClassifierUtils.getHandViaHaarCascade(image, showIO)
 
     # Utility to reset the camshift tracker
     def resetCamShift(self):

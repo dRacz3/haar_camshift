@@ -44,9 +44,10 @@ class program(object):
             fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
             # if got results -> check if we got enough markers to say it's a hand
             if fingers_results is not None:
-                self.isFound, initial_location = self.operations.evaluateIfHandisFound(fingers_results)
+                self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(
+                    fingers_results)
                 self.logger.info(
-                    "Finger results contsains something, is it enough for to say its a hand? {0}".format(self.isFound))
+                    "Finger results contains something, is it enough for to say its a hand? {0}".format(self.isFound))
         # if we got a new location in this round that means that it's the only time when it's not None
         # so we pass it to the camshift, and expect it to initialize itself on this ROI
         camshift_result = None
