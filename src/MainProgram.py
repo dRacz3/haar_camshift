@@ -10,7 +10,7 @@ class program(object):
         FORMAT = '%(asctime)-15s %(message)s'
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('program')
-        self.logger.setLevel('DEBUG')
+        self.logger.setLevel('INFO')
         self.logger.info("Program has been started!")
         self.camera = cv2.VideoCapture(0)
         self.operations = ImageOperations()
@@ -40,7 +40,7 @@ class program(object):
         result, mask = self.operations.adaptiveImageThresholding(result, showIO=False)
         initial_location = None
         if not self.isFound:
-            self.logger.info("Still looking for fingers...")
+            self.logger.debug("Still looking for fingers...")
             fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
             # if got results -> check if we got enough markers to say it's a hand
             if fingers_results is not None:

@@ -79,20 +79,24 @@ class camShiftTracker(object):
         imageShape = image.shape
         print("Bounding size is: ", boundingBoxSize)
         # This prevents us from enlarging the bounding shape too much on accident
-        shapeFactor = 0.4
+        shapeFactor = 0.8
         if(boundingBoxSize[0] > imageShape[0] * shapeFactor or boundingBoxSize[1] > imageShape[1] * shapeFactor):
+            print("position is not valid because bounding box size is too big!")
             return False
 
         # This checks if the box gets too small, then we drop it
         if(boundingBoxSize[0] < 70 and boundingBoxSize[1] < 70):
+            print("position is not valid because bounding box size is too small!")
             return False
 
         # Check if one size is much longer than the other.. it means we are not tracking tha palm
         if(boundingBoxSize[0] > boundingBoxSize[1] * 3 or boundingBoxSize[1] > boundingBoxSize[0] * 3):
+            print("position is not valid because bounding box size is really not symmerics!")
             return False
 
         # This checks the position.. if we get no reading -> it is set to around zero
         if(int(ret[0][0]) < 5 or int(ret[0][1]) < 5):
+            print("position is not valid because bounding box center is close to 0,0!")
             return False
         return True
 
@@ -163,7 +167,7 @@ class CascadeClassifierUtils(object):
         results = self.CascadeClassifier.detectMultiScale(
             image,
             scaleFactor=1.1,
-            minNeighbors=5,
+            minNeighbors=20,
             minSize=(20, 30),
             maxSize=(50, 120),
             flags=cv2.CASCADE_SCALE_IMAGE)
