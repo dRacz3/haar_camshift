@@ -84,11 +84,11 @@ class camShiftTracker(object):
             return False
 
         # This checks if the box gets too small, then we drop it
-        if(boundingBoxSize[0] < 50 and boundingBoxSize[1] < 50):
+        if(boundingBoxSize[0] < 70 and boundingBoxSize[1] < 70):
             return False
 
         # Check if one size is much longer than the other.. it means we are not tracking tha palm
-        if(boundingBoxSize[0] > boundingBoxSize[1] * 2 or boundingBoxSize[1] > boundingBoxSize[0] * 2):
+        if(boundingBoxSize[0] > boundingBoxSize[1] * 3 or boundingBoxSize[1] > boundingBoxSize[0] * 3):
             return False
 
         # This checks the position.. if we get no reading -> it is set to around zero
@@ -109,7 +109,7 @@ class CascadeClassifierUtils(object):
             for (x, y, w, h) in fingers_results:
                 foundFingers = foundFingers + 1
             # if we have more than 3 match, take avg, and say we found a hand
-            if foundFingers > 1:
+            if foundFingers > 3:
                 return True, self.calcAverageLocation(fingers_results)
         # If nothing valid is found say we didnt find it, and return none as position
         return False, None
@@ -197,7 +197,8 @@ class ImageOperations(object):
     # Returns the resulting image, and the mask
     def removeBackground(self, image, showIO=False):
         # Get mask
-        foregroundmask = self.backgroundModel.apply(image)
+        fakemask = cv2.GaussianBlur(image, (5, 5), 0)
+        foregroundmask = self.backgroundModel.apply(fakemask)
         # Apply gaussian filter to smoothen , then median to remove more noise from mask
         gaussian = cv2.GaussianBlur(foregroundmask, (1, 1), 0)
         # Erode the mask to remove noise in the background
