@@ -1,6 +1,7 @@
+import logging
+
 import cv2
 import numpy as np
-import logging
 from imageOperations import ImageOperations
 from mouseMotionManager import mouseMotionManager
 
@@ -46,11 +47,11 @@ class program(object):
             if fingers_results is not None:
                 self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(
                     fingers_results)
-                self.logger.info(
+                self.logger.debug(
                     "Finger results contains something, is it enough for to say its a hand? {0}".format(self.isFound))
         # if we got a new location in this round that means that it's the only time when it's not None
         # so we pass it to the camshift, and expect it to initialize itself on this ROI
-        camshift_result = None
+        # camshift_result = None
         if initial_location is None:
             # Mostly  this should be called
             camshift_result = self.operations.applyCamShift(result, showIO=True)
@@ -67,8 +68,8 @@ class program(object):
             self.isFound = False
             self.logger.debug("No hand can be detected..")
 
-            #self.operations.color_treshold(result, showIO=True)
-            #self.operations.getConvexHulls(result, mask, showIO=True)
+            # self.operations.color_treshold(result, showIO=True)
+            # self.operations.getConvexHulls(result, mask, showIO=True)
         return result
 
     def run(self):
