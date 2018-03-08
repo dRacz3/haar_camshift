@@ -11,8 +11,8 @@ class ImageOperations(object):
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('imageOperations')
         self.logger.setLevel('DEBUG')
-        bgSubThreshold = 100
-        historyCount = 2
+        bgSubThreshold = 80
+        historyCount = 40
         self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
         self.CascadeClassifierUtils = CascadeClassifierUtils()
         self.initial_location = None
@@ -37,7 +37,7 @@ class ImageOperations(object):
         dilation_kernel = np.ones((5, 5), np.uint8)
         dilation = cv2.dilate(erosion, dilation_kernel, iterations=1)
         # Apply to original picture
-        result = cv2.bitwise_and(image, image, mask=erosion)
+        result = cv2.bitwise_and(image, image, mask=dilation)
         if showIO:
             self.showIO(image, result, "removeBackgroundIO")
             # self.showIO(gaussian, median, 'Gaussian-Median filter effect on background')

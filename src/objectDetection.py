@@ -71,8 +71,8 @@ class CamShiftTracker(object):
             if showIO:
                 # Draw it on image
                 pts = cv2.boxPoints(ret)
-                pts = np.int0(pts)
-                cv2.polylines(image, [pts], True, 255, 2)  # This draws the tracking polygon on the hand
+                pts = np.array(pts)
+            #                cv2.polylines(image, pts, True, 255, 2)  # This draws the tracking polygon on the hand
 
             if self.checkIfPositionValid(image, ret):
                 return ret
@@ -174,7 +174,7 @@ class CascadeClassifierUtils(object):
         results = self.CascadeClassifier.detectMultiScale(
             image,
             scaleFactor=1.1,
-            minNeighbors=20,
+            minNeighbors=10,
             minSize=(20, 30),
             maxSize=(50, 120),
             flags=cv2.CASCADE_SCALE_IMAGE)
