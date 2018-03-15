@@ -54,14 +54,15 @@ class program(object):
         # camshift_result = None
         if initial_location is None:
             # Mostly  this should be called
-            camshift_result = self.operations.applyCamShift(startingImage, showIO=True)
+            camshift_result = self.operations.applyCamShift(result, showIO=True)
         else:
             # Initializer calls only
             self.logger.info("Found new initial locations..should reinitialize camshift!")
-            camshift_result = self.operations.applyCamShift(startingImage, initial_location)
+            camshift_result = self.operations.applyCamShift(result, initial_location)
         if camshift_result is not None:
             self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0], camshift_result[1]))
             self.mouseMotionManager.move(camshift_result[0], camshift_result[1])
+            asd = np.array(startingImage)
             # Move mouse to location: camshift_result[0], camshift_result[1]!
         else:
             # if we got back nothing, it means we lost track of the object, we need to find it again via cascade

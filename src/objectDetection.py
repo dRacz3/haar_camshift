@@ -71,9 +71,8 @@ class CamShiftTracker(object):
             if showIO:
                 # Draw it on image
                 pts = cv2.boxPoints(ret)
-                pts = np.array(pts)
-            #                cv2.polylines(image, pts, True, 255, 2)  # This draws the tracking polygon on the hand
-
+                pts = np.int0(pts)
+                cv2.polylines(image, [pts], True, 255, 2)  # This draws the tracking polygon on the hand
             if self.checkIfPositionValid(image, ret):
                 return ret
             else:
@@ -88,22 +87,22 @@ class CamShiftTracker(object):
         # This prevents us from enlarging the bounding shape too much on accident
         shape_factor = 0.8
         if boundingBoxSize[0] > image_shape[0] * shape_factor or boundingBoxSize[1] > image_shape[1] * shape_factor:
-            self.logger.debug("position is not valid because bounding box size is too big!")
+            self.logger.info("position is not valid because bounding box size is too big!")
             return False
 
         # This checks if the box gets too small, then we drop it
         if boundingBoxSize[0] < 70 and boundingBoxSize[1] < 70:
-            self.logger.debug("position is not valid because bounding box size is too small!")
+            self.logger.info("position is not valid because bounding box size is too small!")
             return False
 
         # Check if one size is much longer than the other.. it means we are not tracking tha palm
         if boundingBoxSize[0] > boundingBoxSize[1] * 3 or boundingBoxSize[1] > boundingBoxSize[0] * 3:
-            self.logger.debug("position is not valid because bounding box size is really not symmetrical!")
+            self.logger.info("position is not valid because bounding box size is really not symmetrical!")
             return False
 
         # This checks the position.. if we get no reading -> it is set to around zero
         if int(ret[0][0]) < 5 or int(ret[0][1]) < 5:
-            self.logger.debug("position is not valid because bounding box center is close to 0,0!")
+            self.logger.info("position is not valid because bounding box center is close to 0,0!")
             return False
         return True
 
