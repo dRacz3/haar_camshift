@@ -15,6 +15,13 @@ The algorithm developed here is a couple of chained transformations to extract e
  - numpy
 
 
+## To run:
+```console
+$ cd src/
+$ python MainProgram.py
+```
+
+
  ## Known issues:
  - algorithm cannot detect hand close to the edge and throws an error that is catch via a try block currently.
  - no gesture recognition -> Mouse can only be moved, but cannot interact more.
