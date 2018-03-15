@@ -70,6 +70,7 @@ class ImageOperations(object):
             # normal call should be this, when we are already initialized
             result = self.camShiftTracker.applyCamShift(image=image, showIO=showIO)
         # it means that we got a valid result!
+        return result
         if result is not None:
             x = result[0][0]  # get center X
             y = result[0][1]  # get center y
