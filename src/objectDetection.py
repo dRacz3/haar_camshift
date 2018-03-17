@@ -197,9 +197,9 @@ class CascadeClassifierUtils(object):
         results = self.FaceCascade.detectMultiScale(
             image,
             scaleFactor=1.1,
-            minNeighbors=2,
+            minNeighbors=1,
             minSize=(50, 60),
-            maxSize=(150, 220),
+            maxSize=(300, 400),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:
