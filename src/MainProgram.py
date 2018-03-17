@@ -39,16 +39,16 @@ class program(object):
         cv2.imshow('Result frame', compareResult)
 
     def process(self, startingImage):
-        enableFrames = False
+        result = cv2.bitwise_and(startingImage, startingImage)
+        enableFrames = True
         backgroundRemovalResult, mask = self.operations.removeBackground(startingImage, showIO=True)
-        # result, mask = self.operations.imageThresholding(result, showIO=True) # ->not used
         adaptiveImageThresholdingResult, mask = self.operations.adaptiveImageThresholding(
             backgroundRemovalResult, showIO=False)
         initial_location = None
         if not self.isFound:
             self.logger.debug("Still looking for fingers...")
             fingers_results = self.operations.getHandViaHaarCascade(
-                adaptiveImageThresholdingResult, showIO=enableFrames)
+                startingImage, showIO=enableFrames)
             # if got results -> check if we got enough markers to say it's a hand
             if fingers_results is not None:
                 self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(
@@ -67,19 +67,15 @@ class program(object):
             camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, initial_location)
         if camshift_result is not None:
             self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0][0], camshift_result[0][1]))
-            asd = adaptiveImageThresholdingResult.copy()
-            self.gestureDetector.contourFinder(asd, camshift_result)
-            self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
+            self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(startingImage, showIO=True)
+            # self.gestureDetector.contourFinder(asd, camshift_result)
+            #self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
             # Move mouse to location: camshift_result[0], camshift_result[1]!
         else:
             # if we got back nothing, it means we lost track of the object, we need to find it again via cascade
             self.isFound = False
             self.logger.debug("No hand can be detected..")
-
-            # self.operations.color_treshold(result, showIO=True)
-            # self.operations.getConvexHulls(result, mask, showIO=True)
-
-        return adaptiveImageThresholdingResult
+        return result
 
     def run(self):
         while True:
