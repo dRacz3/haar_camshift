@@ -197,7 +197,7 @@ class CascadeClassifierUtils(object):
         results = self.FaceCascade.detectMultiScale(
             image,
             scaleFactor=1.1,
-            minNeighbors=10,
+            minNeighbors=2,
             minSize=(50, 60),
             maxSize=(150, 220),
             flags=cv2.CASCADE_SCALE_IMAGE)
@@ -206,5 +206,5 @@ class CascadeClassifierUtils(object):
             cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
         if showIO:
-            cv2.imshow("Cascade result", img)
+            cv2.imshow("Cascade Head result", img)
         return results
