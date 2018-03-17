@@ -79,11 +79,6 @@ class ImageOperations(object):
             result = self.camShiftTracker.applyCamShift(image=image, showIO=showIO)
         # it means that we got a valid result!
         return result
-        if result is not None:
-            x = result[0][0]  # get center X
-            y = result[0][1]  # get center y
-            return (x, y)
-        return None
 
     def getHandViaHaarCascade(self, image, showIO=False):
         return self.CascadeClassifierUtils.getHandViaHaarCascade(image, showIO)
@@ -91,3 +86,13 @@ class ImageOperations(object):
     # Utility to reset the camshift tracker
     def resetCamShift(self):
         self.camShiftTracker.reset()
+
+    def calculate_manhattan_distance(self, haar_result, camshift_result):
+        hx = haar_result[0][0]
+        hy = haar_result[0][1]
+
+        cx = camshift_result[0][0]
+        cy = camshift_result[0][1]
+
+        man_dist = abs(hx - cy) + abs(hy - cy)
+        return man_dist
