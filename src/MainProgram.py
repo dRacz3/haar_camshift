@@ -67,7 +67,18 @@ class program(object):
             camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, initial_location)
         if camshift_result is not None:
             self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0][0], camshift_result[0][1]))
-            self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(startingImage, showIO=True)
+            ret = self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(startingImage, showIO=True)
+            if ret is not None:
+                try:
+                    manhattan_distance = self.operations.calculate_manhattan_distance(ret, camshift_result)
+                    face_box_width = ret[0][3]
+                    if manhattan_distance < face_box_width:
+                        self.isFound = False
+                        self.logger.info("Camshift result probably stuck on face, dropping current detection!")
+                except Exception as e:
+                    self.logger.debug(e)
+                #print('Kell reset? ', resetKell)
+                #resetKell = self.operations.check_if_rectangles_overlap(camshift_result, ret)
             # self.gestureDetector.contourFinder(asd, camshift_result)
             #self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
             # Move mouse to location: camshift_result[0], camshift_result[1]!
