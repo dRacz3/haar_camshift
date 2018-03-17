@@ -40,8 +40,8 @@ class program(object):
 
     def process(self, startingImage):
         result = cv2.bitwise_and(startingImage, startingImage)
-        enableFrames = True
-        backgroundRemovalResult, mask = self.operations.removeBackground(startingImage, showIO=True)
+        enableFrames = False
+        backgroundRemovalResult, mask = self.operations.removeBackground(startingImage, showIO=enableFrames)
         adaptiveImageThresholdingResult, mask = self.operations.adaptiveImageThresholding(
             backgroundRemovalResult, showIO=False)
         initial_location = None
@@ -60,14 +60,14 @@ class program(object):
         # camshift_result = None
         if initial_location is None:
             # Mostly  this should be called
-            camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, showIO=True)
+            camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, showIO=enableFrames)
         else:
             # Initializer calls only
             self.logger.info("Found new initial locations..should reinitialize camshift!")
             camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, initial_location)
         if camshift_result is not None:
             self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0][0], camshift_result[0][1]))
-            ret = self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(startingImage, showIO=True)
+            ret = self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(startingImage, showIO=enableFrames)
             if ret is not None:
                 try:
                     manhattan_distance = self.operations.calculate_manhattan_distance(ret, camshift_result)
@@ -78,7 +78,7 @@ class program(object):
                 except Exception as e:
                     self.logger.debug(e)
             # self.gestureDetector.contourFinder(asd, camshift_result)
-            #self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
+            self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
             # Move mouse to location: camshift_result[0], camshift_result[1]!
         else:
             # if we got back nothing, it means we lost track of the object, we need to find it again via cascade

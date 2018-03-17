@@ -30,8 +30,8 @@ class mouseMotionManager():
         dy = screenY - mouseY
 
         kp = 0.8
-
-        pyautogui.moveRel(dx * kp, dy * kp)
+        pyautogui.moveTo(mouseX + kp * dx, mouseY + kp * dy)
+        #pyautogui.moveRel(dx * kp, dy * kp)
         if (points != self.pointsT1m):
             if points < 2:
                 pyautogui.click(button='left')
