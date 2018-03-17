@@ -77,8 +77,6 @@ class program(object):
                         self.logger.info("Camshift result probably stuck on face, dropping current detection!")
                 except Exception as e:
                     self.logger.debug(e)
-                #print('Kell reset? ', resetKell)
-                #resetKell = self.operations.check_if_rectangles_overlap(camshift_result, ret)
             # self.gestureDetector.contourFinder(asd, camshift_result)
             #self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
             # Move mouse to location: camshift_result[0], camshift_result[1]!
