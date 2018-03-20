@@ -72,7 +72,10 @@ class CamShiftTracker(object):
                 # Draw it on image
                 pts = cv2.boxPoints(ret)
                 pts = np.int0(pts)
-                cv2.polylines(image, [pts], True, 255, 2)  # This draws the tracking polygon on the hand
+
+                # This draws the tracking polygon on the hand
+                cv2.polylines(image, [pts], True, 255, 2)
+                cv2.imshow('camshift bbox', image)
             if self.checkIfPositionValid(image, ret):
                 return ret
             else:
@@ -109,8 +112,11 @@ class CamShiftTracker(object):
 
 class CascadeClassifierUtils(object):
     def __init__(self):
-        cascadePath = "haar_finger.xml"
+        #        cascadePath = "haar_finger.xml"
+        cascadePath = 'xml/fist.xml'
+        facePath = 'xml/frontal_face.xml'
         self.CascadeClassifier = cv2.CascadeClassifier(cascadePath)
+        self.FaceCascade = cv2.CascadeClassifier(facePath)
 
     def evaluateIfHandisFound(self, fingers_results):
         if not len(fingers_results) == 0:  # Check if we got any result
@@ -118,8 +124,9 @@ class CascadeClassifierUtils(object):
             foundFingers = 0
             for (x, y, w, h) in fingers_results:
                 foundFingers = foundFingers + 1
+                return True, (x, y)
             # if we have more than 3 match, take avg, and say we found a hand
-            if foundFingers > 3:
+            if foundFingers > 0:
                 return True, self.calcAverageLocation(fingers_results)
         # If nothing valid is found say we didnt find it, and return none as position
         return False, None
@@ -175,7 +182,7 @@ class CascadeClassifierUtils(object):
             scaleFactor=1.1,
             minNeighbors=10,
             minSize=(20, 30),
-            maxSize=(50, 120),
+            maxSize=(150, 220),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:
@@ -183,4 +190,21 @@ class CascadeClassifierUtils(object):
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
         if showIO:
             cv2.imshow("Cascade result", img)
+        return results
+
+    def getFaceViaHaarCascade(self, image, showIO=False):
+        img = image.copy()
+        results = self.FaceCascade.detectMultiScale(
+            image,
+            scaleFactor=1.1,
+            minNeighbors=2,
+            minSize=(50, 60),
+            maxSize=(150, 220),
+            flags=cv2.CASCADE_SCALE_IMAGE)
+
+        for (x, y, w, h) in results:
+            cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if showIO:
+            cv2.imshow("Cascade Head result", img)
         return results

@@ -24,12 +24,13 @@ class ImageOperations(object):
         cv2.imshow(name, stack)
 
     # Returns the resulting image, and the mask
-    def removeBackground(self, image, showIO=False):
+    def removeBackground(self, image, showIO=False, debug=False):
         # Get mask
-        fakemask = cv2.GaussianBlur(image, (5, 5), 0)
+        fakemask = cv2.GaussianBlur(image, (15, 15), 0)
+        nonprocessedMask = self.backgroundModel.apply(image)
         foregroundmask = self.backgroundModel.apply(fakemask)
-        # Apply gaussian filter to smoothen , then median to remove more noise from mask
-        gaussian = cv2.GaussianBlur(foregroundmask, (1, 1), 0)
+        # Apply gaussian filter to smoothen
+        gaussian = cv2.GaussianBlur(foregroundmask, (5, 5), 0)
         # Erode the mask to remove noise in the background
         erosion_kernel = np.ones((5, 5), np.uint8)
         erosion = cv2.erode(gaussian, erosion_kernel, iterations=1)
@@ -38,6 +39,13 @@ class ImageOperations(object):
         dilation = cv2.dilate(erosion, dilation_kernel, iterations=1)
         # Apply to original picture
         result = cv2.bitwise_and(image, image, mask=dilation)
+        #result = image
+        if debug:
+            cv2.imshow('Gaussian_Preprocessed', nonprocessedMask)
+            cv2.imshow('foregroundmask', foregroundmask)
+            cv2.imshow('Gaussian Mask', gaussian)
+            cv2.imshow('Erosio', erosion)
+            cv2.imshow('Dilatation', dilation)
         if showIO:
             self.showIO(image, result, "removeBackgroundIO")
             # self.showIO(gaussian, median, 'Gaussian-Median filter effect on background')
@@ -70,11 +78,7 @@ class ImageOperations(object):
             # normal call should be this, when we are already initialized
             result = self.camShiftTracker.applyCamShift(image=image, showIO=showIO)
         # it means that we got a valid result!
-        if result is not None:
-            x = result[0][0]  # get center X
-            y = result[0][1]  # get center y
-            return (x, y)
-        return None
+        return result
 
     def getHandViaHaarCascade(self, image, showIO=False):
         return self.CascadeClassifierUtils.getHandViaHaarCascade(image, showIO)
@@ -82,3 +86,13 @@ class ImageOperations(object):
     # Utility to reset the camshift tracker
     def resetCamShift(self):
         self.camShiftTracker.reset()
+
+    def calculate_manhattan_distance(self, haar_result, camshift_result):
+        hx = haar_result[0][0]
+        hy = haar_result[0][1]
+
+        cx = camshift_result[0][0]
+        cy = camshift_result[0][1]
+
+        man_dist = abs(hx - cy) + abs(hy - cy)
+        return man_dist

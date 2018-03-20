@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-cap = cv2.VideoCapture('http://192.168.0.248:4747/video')
+cap = cv2.VideoCapture(0)
 
 
 def nothing(x):

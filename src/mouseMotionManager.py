@@ -13,22 +13,19 @@ class mouseMotionManager():
         self.x_offset = 0.4 * self.sizeX
         self.y_offset = 0.4 * self.sizeY
 
-    def calc_mapped_values(self, x, y):
-        x_new = (x + self.x_offset) / (1 + self.x_offset)
-        y_new = (y + self.y_offset) / (1 + self.y_offset)
-        x_new *= self.sizeX
-        y_new *= self.sizeY
-        return x_new, y_new
+        self.movingAvgX = MovingAverage(5)
+        self.movingAvgY = MovingAverage(5)
 
     def move(self, x, y, points=0):
         if x is None:
             return
+
+        x = self.movingAvgX.next(x)
+        y = self.movingAvgY.next(y)
+
         mouseX, mouseY = pyautogui.position()
         screenX = (x / self.height) * self.sizeX
         screenY = (y / self.width) * self.sizeY
-#        screenX, screenY = self.calc_mapped_values(x,y)
-
-#        print("before: ({0}|{1}) -> after :({2}|{3})".format(x,y,screenX,screenY))
         dx = screenX - mouseX  # flip image..
         dy = screenY - mouseY
 
@@ -44,3 +41,23 @@ class mouseMotionManager():
     def release(self):
         pass
         # pyautogui.mouseUp(button='right')
+
+
+from collections import deque
+
+
+class MovingAverage(object):
+    def __init__(self, size):
+        """
+        Initialize your data structure here.
+        :type size: int
+        """
+        self.queue = deque(maxlen=size)
+
+    def next(self, val):
+        """
+        :type val: int
+        :rtype: float
+        """
+        self.queue.append(val)
+        return sum(self.queue) / len(self.queue)
