@@ -118,17 +118,13 @@ class CascadeClassifierUtils(object):
         self.CascadeClassifier = cv2.CascadeClassifier(cascadePath)
         self.FaceCascade = cv2.CascadeClassifier(facePath)
 
-    def evaluateIfHandisFound(self, fingers_results):
-        if not len(fingers_results) == 0:  # Check if we got any result
+    def evaluateIfHandisFound(self, hand_results):
+        if not len(hand_results) == 0:  # Check if we got any result
             # dumb check for finger count
             foundFingers = 0
-            for (x, y, w, h) in fingers_results:
+            for (x, y, w, h) in hand_results:
                 foundFingers = foundFingers + 1
-                return True, (x, y)
-            # if we have more than 3 match, take avg, and say we found a hand
-            if foundFingers > 0:
-                return True, self.calcAverageLocation(fingers_results)
-        # If nothing valid is found say we didnt find it, and return none as position
+                return True, (x, y, w, h)
         return False, None
 
     # This function calculates the average location of all detected fingers
@@ -152,13 +148,9 @@ class CascadeClassifierUtils(object):
             cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
             cv2.imshow("showAvgLoc", image)
 
-    # Quick calculation to get a given shaped box for center coordiantes
-    # WARNING : Hard coded width + height!
-    def getBoundingBox(self, x, y):
+    def getBoundingBox(self, x, y, w , h):
         x = x
         y = y
-        w = 150
-        h = 150
         x1 = int(x - w / 2)
         x2 = int(x + w / 2)
         y1 = int(y - h / 2)

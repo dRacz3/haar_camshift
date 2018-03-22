@@ -27,7 +27,7 @@ class ImageOperations(object):
     def removeBackground(self, image, showIO=False, debug=False):
         # Get mask
         fakemask = cv2.GaussianBlur(image, (15, 15), 0)
-        #nonprocessedMask = self.backgroundModel.apply(image)
+        # nonprocessedMask = self.backgroundModel.apply(image)
         foregroundmask = self.backgroundModel.apply(fakemask)
         # Apply gaussian filter to smoothen
         gaussian = cv2.GaussianBlur(foregroundmask, (5, 5), 0)
@@ -39,7 +39,7 @@ class ImageOperations(object):
         dilation = cv2.dilate(erosion, dilation_kernel, iterations=1)
         # Apply to original picture
         result = cv2.bitwise_and(image, image, mask=dilation)
-        #result = image
+        # result = image
         if debug:
             cv2.imshow('Gaussian_Preprocessed', nonprocessedMask)
             cv2.imshow('foregroundmask', foregroundmask)
@@ -72,7 +72,8 @@ class ImageOperations(object):
         if initial_location is not None:
             # Get the ROI frame box, pass it on
             self.logger.debug('Initial location has been passed, should initialize')
-            boundingBox = self.CascadeClassifierUtils.getBoundingBox(initial_location[0], initial_location[1])
+            boundingBox = self.CascadeClassifierUtils.getBoundingBox(initial_location[0], initial_location[1],
+                                                                     initial_location[2], initial_location[3])
             result = self.camShiftTracker.applyCamShift(image=image, bounding_box=boundingBox, showIO=showIO)
         else:
             # normal call should be this, when we are already initialized

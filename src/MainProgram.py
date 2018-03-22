@@ -40,19 +40,19 @@ class program(object):
 
     def process(self, startingImage):
         result = cv2.bitwise_and(startingImage, startingImage)
-        enableFrames = False
+        enableFrames = True
         backgroundRemovalResult, mask = self.operations.removeBackground(startingImage, showIO=enableFrames)
         adaptiveImageThresholdingResult, mask = self.operations.adaptiveImageThresholding(
             backgroundRemovalResult, showIO=False)
         initial_location = None
         if not self.isFound:
             self.logger.debug("Still looking for fingers...")
-            fingers_results = self.operations.getHandViaHaarCascade(
+            handResults = self.operations.getHandViaHaarCascade(
                 startingImage, showIO=enableFrames)
             # if got results -> check if we got enough markers to say it's a hand
-            if fingers_results is not None:
+            if handResults is not None:
                 self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(
-                    fingers_results)
+                    handResults)
                 self.logger.debug(
                     "Finger results contains something, is it enough for to say its a hand? {0}".format(self.isFound))
         # if we got a new location in this round that means that it's the only time when it's not None
