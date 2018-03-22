@@ -27,7 +27,7 @@ class ImageOperations(object):
     def removeBackground(self, image, showIO=False, debug=False):
         # Get mask
         fakemask = cv2.GaussianBlur(image, (15, 15), 0)
-        nonprocessedMask = self.backgroundModel.apply(image)
+        #nonprocessedMask = self.backgroundModel.apply(image)
         foregroundmask = self.backgroundModel.apply(fakemask)
         # Apply gaussian filter to smoothen
         gaussian = cv2.GaussianBlur(foregroundmask, (5, 5), 0)

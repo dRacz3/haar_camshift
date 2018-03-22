@@ -74,6 +74,7 @@ class program(object):
                     face_box_width = ret[0][3]
                     if manhattan_distance < face_box_width:
                         self.isFound = False
+                        self.operations.resetCamShift()
                         self.logger.info("Camshift result probably stuck on face, dropping current detection!")
                 except Exception as e:
                     self.logger.debug(e)
