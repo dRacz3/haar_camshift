@@ -94,8 +94,9 @@ class CamShiftTracker(object):
             return False
 
         # This checks if the box gets too small, then we drop it
-        if boundingBoxSize[0] < 70 and boundingBoxSize[1] < 70:
-            self.logger.info("position is not valid because bounding box size is too small!")
+        if boundingBoxSize[0] < 30 or boundingBoxSize[1] < 30:
+            self.logger.info("position is not valid because bounding box size is too small! Size:[%s|%s]",
+                             boundingBoxSize[0], boundingBoxSize[1])
             return False
 
         # Check if one size is much longer than the other.. it means we are not tracking tha palm
@@ -120,26 +121,10 @@ class CascadeClassifierUtils(object):
 
     def evaluateIfHandisFound(self, hand_results):
         if not len(hand_results) == 0:  # Check if we got any result
-            # dumb check for finger count
-            foundFingers = 0
             for (x, y, w, h) in hand_results:
-                foundFingers = foundFingers + 1
+                print('Hand found at : {0}|{1} Size: {2}|{3}'.format(x,y,w,h))
                 return True, (x, y, w, h)
         return False, None
-
-    # This function calculates the average location of all detected fingers
-    # TODO : Improve this by counting only local fingers as one, and neglect the others
-    def calcAverageLocation(self, location_frames):
-        x_avg = 0
-        y_avg = 0
-        count = 0
-        for (x, y, w, h) in location_frames:
-            x_avg = x_avg + ((x + w) / 2)
-            y_avg = y_avg + ((y + h) / 2)
-            count = count + 1
-        x_avg = x_avg / count
-        y_avg = y_avg / count
-        return x_avg, y_avg
 
     # Utility function to show the average location of fingers -> good guess for hand position
     def showAverageLocation(self, image, roiframe):

@@ -78,9 +78,7 @@ class program(object):
                         self.logger.info("Camshift result probably stuck on face, dropping current detection!")
                 except Exception as e:
                     self.logger.debug(e)
-            # self.gestureDetector.contourFinder(asd, camshift_result)
             self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
-            # Move mouse to location: camshift_result[0], camshift_result[1]!
         else:
             # if we got back nothing, it means we lost track of the object, we need to find it again via cascade
             self.isFound = False
