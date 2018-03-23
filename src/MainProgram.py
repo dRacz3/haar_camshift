@@ -9,7 +9,7 @@ from gestureDetector import GestureDetector
 
 class program(object):
     def __init__(self):
-        FORMAT = '%(asctime)-15s %(message)s'
+        FORMAT = '[%(asctime)-15s][%(levelname)s][%(funcName)s] %(message)s'
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('program')
         self.logger.setLevel('INFO')
@@ -49,10 +49,8 @@ class program(object):
             self.logger.debug("Still looking for fingers...")
             handResults = self.operations.getHandViaHaarCascade(
                 startingImage, showIO=enableFrames)
-            # if got results -> check if we got enough markers to say it's a hand
             if handResults is not None:
-                self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(
-                    handResults)
+                self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(handResults)
                 self.logger.debug(
                     "Finger results contains something, is it enough for to say its a hand? {0}".format(self.isFound))
         # if we got a new location in this round that means that it's the only time when it's not None

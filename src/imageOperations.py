@@ -7,7 +7,7 @@ from objectDetection import CamShiftTracker, CascadeClassifierUtils
 
 class ImageOperations(object):
     def __init__(self):
-        FORMAT = '%(asctime)-15s %(message)s'
+        FORMAT = '[%(asctime)-15s][%(levelname)s][%(funcName)s] %(message)s'
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('imageOperations')
         self.logger.setLevel('DEBUG')
@@ -74,7 +74,9 @@ class ImageOperations(object):
             self.logger.debug('Initial location has been passed, should initialize')
             boundingBox = self.CascadeClassifierUtils.getBoundingBox(initial_location[0], initial_location[1],
                                                                      initial_location[2], initial_location[3])
+            self.camShiftTracker.setBoxSize(initial_location[2], initial_location[3])
             result = self.camShiftTracker.applyCamShift(image=image, bounding_box=boundingBox, showIO=showIO)
+
         else:
             # normal call should be this, when we are already initialized
             result = self.camShiftTracker.applyCamShift(image=image, showIO=showIO)

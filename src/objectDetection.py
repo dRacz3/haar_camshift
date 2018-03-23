@@ -6,8 +6,7 @@ import numpy as np
 
 class CamShiftTracker(object):
     def __init__(self):
-
-        FORMAT = '%(asctime)-15s %(message)s'
+        FORMAT = '[%(asctime)-15s][%(levelname)s][%(funcName)s] %(message)s'
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('camShiftTracker')
         self.logger.setLevel('INFO')
@@ -30,6 +29,9 @@ class CamShiftTracker(object):
         # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
         self.term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
         self.gotValidStuffToTrack = False
+    def setBoxSize(self, w, h):
+        self.w = w
+        self.h = h
 
     def setupFrameAroundValidArea(self, image, bounding_box):
         try:
@@ -134,8 +136,6 @@ class CascadeClassifierUtils(object):
             cv2.imshow("showAvgLoc", image)
 
     def getBoundingBox(self, x, y, w , h):
-        x = x
-        y = y
         x1 = int(x - w / 2)
         x2 = int(x + w / 2)
         y1 = int(y - h / 2)
