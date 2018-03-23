@@ -14,6 +14,8 @@ class ImageOperations(object):
         bgSubThreshold = 80
         historyCount = 40
         self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
+        #self.mog2backgroundModel = cv2.createBackgroundSubtractorMOG2(history = 20, varThreshold  =  5, detectShadows=False)
+
         self.CascadeClassifierUtils = CascadeClassifierUtils()
         self.initial_location = None
         self.camShiftTracker = CamShiftTracker()
@@ -28,7 +30,14 @@ class ImageOperations(object):
         # Get mask
         fakemask = cv2.GaussianBlur(image, (15, 15), 0)
         # nonprocessedMask = self.backgroundModel.apply(image)
-        foregroundmask = self.backgroundModel.apply(fakemask)
+
+
+        #mog2Mask = self.mog2backgroundModel.apply(fakemask)
+        #fakeImg = image.copy()
+        #resultMog = cv2.bitwise_and(fakeImg, fakeImg, mask=mog2Mask)
+
+
+        foregroundmask = self.backgroundModel.apply(image)
         # Apply gaussian filter to smoothen
         gaussian = cv2.GaussianBlur(foregroundmask, (5, 5), 0)
         # Erode the mask to remove noise in the background
@@ -39,11 +48,12 @@ class ImageOperations(object):
         dilation = cv2.dilate(erosion, dilation_kernel, iterations=1)
         # Apply to original picture
         result = cv2.bitwise_and(image, image, mask=dilation)
+
         # result = image
         if debug:
-            cv2.imshow('Gaussian_Preprocessed', nonprocessedMask)
             cv2.imshow('foregroundmask', foregroundmask)
-            cv2.imshow('Gaussian Mask', gaussian)
+            #cv2.imshow('mog2 Mask', mog2Mask)
+            #cv2.imshow('mog2 pict', resultMog)
             cv2.imshow('Erosio', erosion)
             cv2.imshow('Dilatation', dilation)
         if showIO:

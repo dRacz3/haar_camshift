@@ -39,9 +39,9 @@ class program(object):
         cv2.imshow('Result frame', compareResult)
 
     def process(self, startingImage):
-        result = cv2.bitwise_and(startingImage, startingImage)
+#        result = cv2.bitwise_and(startingImage, startingImage)
         enableFrames = True
-        backgroundRemovalResult, mask = self.operations.removeBackground(startingImage, showIO=enableFrames)
+        backgroundRemovalResult, mask = self.operations.removeBackground(startingImage, showIO=enableFrames, debug = True)
         adaptiveImageThresholdingResult, mask = self.operations.adaptiveImageThresholding(
             backgroundRemovalResult, showIO=False)
         initial_location = None
@@ -81,6 +81,7 @@ class program(object):
             # if we got back nothing, it means we lost track of the object, we need to find it again via cascade
             self.isFound = False
             self.logger.debug("No hand can be detected..")
+        result = adaptiveImageThresholdingResult
         return result
 
     def run(self):
