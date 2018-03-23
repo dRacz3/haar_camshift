@@ -6,8 +6,7 @@ import numpy as np
 
 class CamShiftTracker(object):
     def __init__(self):
-
-        FORMAT = '%(asctime)-15s %(message)s'
+        FORMAT = '[%(asctime)-15s][%(levelname)s][%(funcName)s] %(message)s'
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('camShiftTracker')
         self.logger.setLevel('INFO')
@@ -30,6 +29,9 @@ class CamShiftTracker(object):
         # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
         self.term_crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
         self.gotValidStuffToTrack = False
+    def setBoxSize(self, w, h):
+        self.w = w
+        self.h = h
 
     def setupFrameAroundValidArea(self, image, bounding_box):
         try:
@@ -72,7 +74,10 @@ class CamShiftTracker(object):
                 # Draw it on image
                 pts = cv2.boxPoints(ret)
                 pts = np.int0(pts)
-                cv2.polylines(image, [pts], True, 255, 2)  # This draws the tracking polygon on the hand
+
+                # This draws the tracking polygon on the hand
+                cv2.polylines(image, [pts], True, 255, 2)
+                cv2.imshow('camshift bbox', image)
             if self.checkIfPositionValid(image, ret):
                 return ret
             else:
@@ -91,8 +96,9 @@ class CamShiftTracker(object):
             return False
 
         # This checks if the box gets too small, then we drop it
-        if boundingBoxSize[0] < 70 and boundingBoxSize[1] < 70:
-            self.logger.info("position is not valid because bounding box size is too small!")
+        if boundingBoxSize[0] < 30 or boundingBoxSize[1] < 30:
+            self.logger.info("position is not valid because bounding box size is too small! Size:[%s|%s]",
+                             boundingBoxSize[0], boundingBoxSize[1])
             return False
 
         # Check if one size is much longer than the other.. it means we are not tracking tha palm
@@ -109,34 +115,18 @@ class CamShiftTracker(object):
 
 class CascadeClassifierUtils(object):
     def __init__(self):
-        cascadePath = "haar_finger.xml"
+        #        cascadePath = "haar_finger.xml"
+        cascadePath = 'xml/fist.xml'
+        facePath = 'xml/frontal_face.xml'
         self.CascadeClassifier = cv2.CascadeClassifier(cascadePath)
+        self.FaceCascade = cv2.CascadeClassifier(facePath)
 
-    def evaluateIfHandisFound(self, fingers_results):
-        if not len(fingers_results) == 0:  # Check if we got any result
-            # dumb check for finger count
-            foundFingers = 0
-            for (x, y, w, h) in fingers_results:
-                foundFingers = foundFingers + 1
-            # if we have more than 3 match, take avg, and say we found a hand
-            if foundFingers > 3:
-                return True, self.calcAverageLocation(fingers_results)
-        # If nothing valid is found say we didnt find it, and return none as position
+    def evaluateIfHandisFound(self, hand_results):
+        if not len(hand_results) == 0:  # Check if we got any result
+            for (x, y, w, h) in hand_results:
+                print('Hand found at : {0}|{1} Size: {2}|{3}'.format(x,y,w,h))
+                return True, (x, y, w, h)
         return False, None
-
-    # This function calculates the average location of all detected fingers
-    # TODO : Improve this by counting only local fingers as one, and neglect the others
-    def calcAverageLocation(self, location_frames):
-        x_avg = 0
-        y_avg = 0
-        count = 0
-        for (x, y, w, h) in location_frames:
-            x_avg = x_avg + ((x + w) / 2)
-            y_avg = y_avg + ((y + h) / 2)
-            count = count + 1
-        x_avg = x_avg / count
-        y_avg = y_avg / count
-        return x_avg, y_avg
 
     # Utility function to show the average location of fingers -> good guess for hand position
     def showAverageLocation(self, image, roiframe):
@@ -145,13 +135,7 @@ class CascadeClassifierUtils(object):
             cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
             cv2.imshow("showAvgLoc", image)
 
-    # Quick calculation to get a given shaped box for center coordiantes
-    # WARNING : Hard coded width + height!
-    def getBoundingBox(self, x, y):
-        x = x
-        y = y
-        w = 150
-        h = 150
+    def getBoundingBox(self, x, y, w , h):
         x1 = int(x - w / 2)
         x2 = int(x + w / 2)
         y1 = int(y - h / 2)
@@ -175,7 +159,7 @@ class CascadeClassifierUtils(object):
             scaleFactor=1.1,
             minNeighbors=10,
             minSize=(20, 30),
-            maxSize=(50, 120),
+            maxSize=(150, 220),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:
@@ -183,4 +167,21 @@ class CascadeClassifierUtils(object):
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
         if showIO:
             cv2.imshow("Cascade result", img)
+        return results
+
+    def getFaceViaHaarCascade(self, image, showIO=False):
+        img = image.copy()
+        results = self.FaceCascade.detectMultiScale(
+            image,
+            scaleFactor=1.1,
+            minNeighbors=1,
+            minSize=(50, 60),
+            maxSize=(300, 400),
+            flags=cv2.CASCADE_SCALE_IMAGE)
+
+        for (x, y, w, h) in results:
+            cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if showIO:
+            cv2.imshow("Cascade Head result", img)
         return results

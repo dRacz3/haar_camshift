@@ -5,3 +5,5 @@ src/__pycache__/
 src/downloads/
 downloads/
 cascade_training/
+demo/
+.idea/

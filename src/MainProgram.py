@@ -4,11 +4,12 @@ import cv2
 import numpy as np
 from imageOperations import ImageOperations
 from mouseMotionManager import mouseMotionManager
+from gestureDetector import GestureDetector
 
 
 class program(object):
     def __init__(self):
-        FORMAT = '%(asctime)-15s %(message)s'
+        FORMAT = '[%(asctime)-15s][%(levelname)s][%(funcName)s] %(message)s'
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('program')
         self.logger.setLevel('INFO')
@@ -19,6 +20,8 @@ class program(object):
 
         ret, frame = self.camera.read()
         self.mouseMotionManager = mouseMotionManager(frame)
+
+        self.gestureDetector = GestureDetector()
 
     def release(self):
         # When everything done, release the capture
@@ -36,17 +39,18 @@ class program(object):
         cv2.imshow('Result frame', compareResult)
 
     def process(self, startingImage):
-        result, mask = self.operations.removeBackground(startingImage, showIO=False)
-        # result, mask = self.operations.imageThresholding(result, showIO=True) # ->not used
-        result, mask = self.operations.adaptiveImageThresholding(result, showIO=False)
+#        result = cv2.bitwise_and(startingImage, startingImage)
+        enableFrames = True
+        backgroundRemovalResult, mask = self.operations.removeBackground(startingImage, showIO=enableFrames, debug = True)
+        adaptiveImageThresholdingResult, mask = self.operations.adaptiveImageThresholding(
+            backgroundRemovalResult, showIO=False)
         initial_location = None
         if not self.isFound:
             self.logger.debug("Still looking for fingers...")
-            fingers_results = self.operations.getHandViaHaarCascade(result, showIO=True)
-            # if got results -> check if we got enough markers to say it's a hand
-            if fingers_results is not None:
-                self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(
-                    fingers_results)
+            handResults = self.operations.getHandViaHaarCascade(
+                startingImage, showIO=enableFrames)
+            if handResults is not None:
+                self.isFound, initial_location = self.operations.CascadeClassifierUtils.evaluateIfHandisFound(handResults)
                 self.logger.debug(
                     "Finger results contains something, is it enough for to say its a hand? {0}".format(self.isFound))
         # if we got a new location in this round that means that it's the only time when it's not None
@@ -54,23 +58,30 @@ class program(object):
         # camshift_result = None
         if initial_location is None:
             # Mostly  this should be called
-            camshift_result = self.operations.applyCamShift(result, showIO=True)
+            camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, showIO=enableFrames)
         else:
             # Initializer calls only
             self.logger.info("Found new initial locations..should reinitialize camshift!")
-            camshift_result = self.operations.applyCamShift(result, initial_location)
+            camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, initial_location)
         if camshift_result is not None:
-            self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0], camshift_result[1]))
-            self.mouseMotionManager.move(camshift_result[0], camshift_result[1])
-            asd = np.array(startingImage)
-            # Move mouse to location: camshift_result[0], camshift_result[1]!
+            self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0][0], camshift_result[0][1]))
+            ret = self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(startingImage, showIO=enableFrames)
+            if ret is not None:
+                try:
+                    manhattan_distance = self.operations.calculate_manhattan_distance(ret, camshift_result)
+                    face_box_width = ret[0][3]
+                    if manhattan_distance < face_box_width:
+                        self.isFound = False
+                        self.operations.resetCamShift()
+                        self.logger.info("Camshift result probably stuck on face, dropping current detection!")
+                except Exception as e:
+                    self.logger.debug(e)
+            self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
         else:
             # if we got back nothing, it means we lost track of the object, we need to find it again via cascade
             self.isFound = False
             self.logger.debug("No hand can be detected..")
-
-            # self.operations.color_treshold(result, showIO=True)
-            # self.operations.getConvexHulls(result, mask, showIO=True)
+        result = adaptiveImageThresholdingResult
         return result
 
     def run(self):
