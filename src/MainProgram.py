@@ -67,17 +67,16 @@ class program(object):
             self.dataRecorder.recordHaarPosition(initial_location[0],initial_location[1])
         if camshift_result is not None:
             self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0][0], camshift_result[0][1]))
-            ret = self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(startingImage, showIO=enableFrames)
-            if ret is not None:
-                try:
-                    manhattan_distance = self.operations.calculate_manhattan_distance(ret, camshift_result)
-                    self.logger.info("manhattan_distance:%s", manhattan_distance)
-                    if abs(manhattan_distance) < abs(80):
-                        self.isFound = False
-                        self.operations.resetCamShift()
-                        self.logger.info("Camshift result probably stuck on face, dropping current detection!")
-                except Exception as e:
-                    self.logger.debug(e)
+            ret = self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(copy, showIO=True)
+            try:
+                manhattan_distance = self.operations.calculate_manhattan_distance(ret, camshift_result)
+                self.logger.info("manhattan_distance:%s, face:%s", manhattan_distance, ret)
+                if abs(manhattan_distance) < abs(80):
+                    self.isFound = False
+                    self.operations.resetCamShift()
+                    self.logger.info("Camshift result probably stuck on face, dropping current detection!")
+            except Exception as e:
+                self.logger.info(e)
             self.mouseMotionManager.move(camshift_result[0][0], camshift_result[0][1])
             self.dataRecorder.recordCamshiftPosition(camshift_result[0][0], camshift_result[0][1])
         else:
