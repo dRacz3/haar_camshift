@@ -158,8 +158,8 @@ class CascadeClassifierUtils(object):
             image,
             scaleFactor=1.1,
             minNeighbors=10,
-            minSize=(20, 30),
-            maxSize=(150, 220),
+            minSize=(40, 40),
+            maxSize=(140, 140),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:
@@ -175,13 +175,24 @@ class CascadeClassifierUtils(object):
             image,
             scaleFactor=1.1,
             minNeighbors=1,
-            minSize=(50, 60),
-            maxSize=(300, 400),
+            minSize=(100, 100),
+            maxSize=(220, 220),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:
             cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 10, (0, 0, 255), -1)
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        if showIO:
-            cv2.imshow("Cascade Head result", img)
-        return results
+
+            if showIO:
+                cv2.imshow("Cascade Head result", img)
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(img,
+                            'Head detected :{0}|{1}'.format(int(x + w / 2), int(y + h / 2)),
+                            (10,400),
+                             font,
+                              1,
+                              (255,255,255),
+                              2,
+                              cv2.LINE_AA)
+            return (int(x + w /2), int (y+h/2))
+        return None

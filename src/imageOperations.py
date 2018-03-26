@@ -101,8 +101,8 @@ class ImageOperations(object):
         self.camShiftTracker.reset()
 
     def calculate_manhattan_distance(self, haar_result, camshift_result):
-        hx = haar_result[0][0]
-        hy = haar_result[0][1]
+        hx = haar_result[0]
+        hy = haar_result[1]
 
         cx = camshift_result[0][0]
         cy = camshift_result[0][1]
