@@ -8,3 +8,4 @@ cascade_training/
 demo/
 .idea/
 *.ipynb
+*.csv
