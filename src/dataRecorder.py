@@ -3,17 +3,19 @@ import numpy as np
 
 class dataRecorder(object):
     def __init__(self):
-        self.data = {'cx':[], 'cy':[], 'cascadeX': [], 'cascadeY' : []}
+        self.camshift = {'x':[], 'y':[]}
+        self.cascade = {'x': [], 'y' : []}
 
     def recordCamshiftPosition(self, x, y):
-        self.data['cx'].append(x)
-        self.data['cy'].append(y)
+        self.camshift['x'].append(x)
+        self.camshift['y'].append(y)
 
     def recordHaarPosition(self,x,y):
-        self.data['cascadeX'].append(x)
-        self.data['cascadeY'].append(y)
+        self.cascade['x'].append(x)
+        self.cascade['y'].append(y)
 
     def save(self):
-        df = pd.DataFrame(self.data)
-        df.to_csv('asd.csv')
-        self.data = {'cx':[], 'cy':[], 'cascadeX': [], 'cascadeY' : []}
+        df = pd.DataFrame(self.cascade)
+        df.to_csv('cascade.csv')
+        df = pd.DataFrame(self.camshift)
+        df.to_csv('camshift.csv')
