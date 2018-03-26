@@ -158,8 +158,8 @@ class CascadeClassifierUtils(object):
             image,
             scaleFactor=1.1,
             minNeighbors=10,
-            minSize=(20, 30),
-            maxSize=(150, 220),
+            minSize=(40, 40),
+            maxSize=(140, 140),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:
@@ -175,8 +175,8 @@ class CascadeClassifierUtils(object):
             image,
             scaleFactor=1.1,
             minNeighbors=1,
-            minSize=(50, 60),
-            maxSize=(300, 400),
+            minSize=(100, 100),
+            maxSize=(220, 220),
             flags=cv2.CASCADE_SCALE_IMAGE)
 
         for (x, y, w, h) in results:

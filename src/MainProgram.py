@@ -65,12 +65,14 @@ class program(object):
             self.logger.info("Found new initial locations..should reinitialize camshift!")
             camshift_result = self.operations.applyCamShift(adaptiveImageThresholdingResult, initial_location)
             self.dataRecorder.recordHaarPosition(initial_location[0],initial_location[1])
+            self.logger.debug("Size of hand: %s|%s", handResults[0][2], handResults[0][3])
+
         if camshift_result is not None:
             self.logger.debug('HAND LOCATION: {0}|{1}'.format(camshift_result[0][0], camshift_result[0][1]))
             ret = self.operations.CascadeClassifierUtils.getFaceViaHaarCascade(copy, showIO=True)
             try:
                 manhattan_distance = self.operations.calculate_manhattan_distance(ret, camshift_result)
-                self.logger.info("manhattan_distance:%s, face:%s", manhattan_distance, ret)
+                self.logger.debug("manhattan_distance:%s, face:%s", manhattan_distance, ret)
                 if abs(manhattan_distance) < abs(80):
                     self.isFound = False
                     self.operations.resetCamShift()
