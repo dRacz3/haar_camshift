@@ -236,16 +236,20 @@ class colorBasedSegmenter:
         mask = cv2.inRange(image, lower_blue, upper_blue)
             # Bitwise-AND mask and original image
         res = cv2.bitwise_and(image, image, mask=mask)
-
+        x = None
+        y = None
         try:
-            asd = self.findBiggestConvexShapeDeficit(res)
+            x,y = self.findBiggestConvexShapeDeficit(res)
         except:
             pass
 
         if showIO:
             stack = np.hstack([image, res])
             cv2.imshow('segmentation',stack)
-        return res
+        if x is not None:
+            return res, (x,y)
+        else:
+            return res, None
 
 
     #deprecated

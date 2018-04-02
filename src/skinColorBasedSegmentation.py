@@ -5,6 +5,7 @@ import numpy as np
 from imageOperations import ImageOperations
 from objectDetection import colorBasedSegmenter
 from dataRecorder import dataRecorder
+from mouseMotionManager import mouseMotionManager
 
 
 class program(object):
@@ -20,6 +21,8 @@ class program(object):
 
         ret, frame = self.camera.read()
         self.dataRecorder = dataRecorder()
+        ret, frame = self.camera.read()
+        self.mouseMotionManager = mouseMotionManager(frame)
 
     def release(self):
         # When everything done, release the capture
@@ -38,7 +41,10 @@ class program(object):
 
     def process(self, startingImage):
         bgrm , mask = self.operations.removeBackground(startingImage, erosion_kernel_size = 15)
-        result = self.segmenter.applyColorBasedSegmenetation(bgrm , showIO=True)
+        result, center = self.segmenter.applyColorBasedSegmenetation(bgrm , showIO=True)
+        if center is not None:
+            pass
+#            self.mouseMotionManager.move(center[0], center[1])
 
         return result
 
