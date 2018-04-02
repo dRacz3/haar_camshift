@@ -6,13 +6,11 @@ from objectDetection import CamShiftTracker, CascadeClassifierUtils
 
 
 class ImageOperations(object):
-    def __init__(self):
+    def __init__(self, bgSubThreshold = 80, historyCount = 40):
         FORMAT = '[%(asctime)-15s][%(levelname)s][%(funcName)s] %(message)s'
         logging.basicConfig(format=FORMAT)
         self.logger = logging.getLogger('imageOperations')
         self.logger.setLevel('DEBUG')
-        bgSubThreshold = 80
-        historyCount = 40
         self.backgroundModel = cv2.createBackgroundSubtractorKNN(historyCount, bgSubThreshold)
         #self.mog2backgroundModel = cv2.createBackgroundSubtractorMOG2(history = 20, varThreshold  =  5, detectShadows=False)
 
@@ -26,22 +24,16 @@ class ImageOperations(object):
         cv2.imshow(name, stack)
 
     # Returns the resulting image, and the mask
-    def removeBackground(self, image, showIO=False, debug=False):
+    def removeBackground(self, image, showIO=False, debug=False, erosion_kernel_size = 5):
         # Get mask
         fakemask = cv2.GaussianBlur(image, (15, 15), 0)
         # nonprocessedMask = self.backgroundModel.apply(image)
-
-
-        #mog2Mask = self.mog2backgroundModel.apply(fakemask)
-        #fakeImg = image.copy()
-        #resultMog = cv2.bitwise_and(fakeImg, fakeImg, mask=mog2Mask)
-
 
         foregroundmask = self.backgroundModel.apply(image)
         # Apply gaussian filter to smoothen
         gaussian = cv2.GaussianBlur(foregroundmask, (5, 5), 0)
         # Erode the mask to remove noise in the background
-        erosion_kernel = np.ones((5, 5), np.uint8)
+        erosion_kernel = np.ones((erosion_kernel_size, erosion_kernel_size), np.uint8)
         erosion = cv2.erode(gaussian, erosion_kernel, iterations=1)
         # Dilatation to get back the object
         dilation_kernel = np.ones((5, 5), np.uint8)
