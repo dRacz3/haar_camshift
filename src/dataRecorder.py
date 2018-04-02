@@ -1,16 +1,23 @@
 import pandas as pd
 import numpy as np
 
+import time
+
+
 class dataRecorder(object):
     def __init__(self):
-        self.camshift = {'x':[], 'y':[]}
-        self.cascade = {'x': [], 'y' : []}
+        self.camshift = {'time': [], 'x': [], 'y': []}
+        self.cascade = {'time': [], 'x': [], 'y': []}
 
     def recordCamshiftPosition(self, x, y):
+        ts = time.time()
+        self.camshift['time'].append(ts)
         self.camshift['x'].append(x)
         self.camshift['y'].append(y)
 
-    def recordHaarPosition(self,x,y):
+    def recordHaarPosition(self, x, y):
+        ts = time.time()
+        self.cascade['time'].append(ts)
         self.cascade['x'].append(x)
         self.cascade['y'].append(y)
 
