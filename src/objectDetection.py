@@ -196,3 +196,137 @@ class CascadeClassifierUtils(object):
                               cv2.LINE_AA)
             return (int(x + w /2), int (y+h/2))
         return None
+
+
+
+def nothing():
+    pass
+
+class colorBasedSegmenter:
+    def __init__(self):
+        FORMAT = '[%(asctime)-15s][%(levelname)s][%(funcName)s] %(message)s'
+        logging.basicConfig(format=FORMAT)
+        self.logger = logging.getLogger('colorBasedSegmenter')
+        self.logger.setLevel('INFO')
+
+        cv2.namedWindow('image',cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('image', 250, 300)
+
+        # hue  / saturation / value
+        cv2.createTrackbar('h_min', 'image', 54, 255, nothing)
+        cv2.createTrackbar('s_min', 'image', 64, 255, nothing)
+        cv2.createTrackbar('v_min', 'image', 96, 255, nothing)
+        cv2.createTrackbar('h_max', 'image', 219, 255, nothing)
+        cv2.createTrackbar('s_max', 'image', 255, 255, nothing)
+        cv2.createTrackbar('v_max', 'image', 255, 255, nothing)
+
+
+    def applyColorBasedSegmenetation(self, image, showIO = False):
+        hmi = cv2.getTrackbarPos('h_min', 'image')
+        smi = cv2.getTrackbarPos('s_min', 'image')
+        vmi = cv2.getTrackbarPos('v_min', 'image')
+        hma = cv2.getTrackbarPos('h_max', 'image')
+        sma = cv2.getTrackbarPos('s_max', 'image')
+        vma = cv2.getTrackbarPos('v_max', 'image')
+        #put the limits here
+        lower_blue = np.array([hmi, smi, vmi])
+        upper_blue = np.array([hma, sma, vma])
+        print()
+
+        mask = cv2.inRange(image, lower_blue, upper_blue)
+            # Bitwise-AND mask and original image
+        res = cv2.bitwise_and(image, image, mask=mask)
+
+        try:
+            asd = self.findBiggestConvexShapeDeficit(res)
+        except:
+            pass
+
+        if showIO:
+            stack = np.hstack([image, res])
+            cv2.imshow('segmentation',stack)
+        return res
+
+
+    #deprecated
+    def findBiggestConvexShape(self, image):
+        copy = cv2.bitwise_and(image, image)
+        gimg = cv2.cvtColor(copy, cv2.COLOR_RGB2GRAY)
+        thresh = cv2.adaptiveThreshold(gimg, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 25, 12)
+        im2, contours, hierarchy = cv2.findContours(thresh, 1, 2)
+
+        maxArea = 0
+        secondMax = 0
+        maxContour = contours[0]
+        secondContour = contours[0]
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > maxArea:
+                secondMax = maxArea
+                secondContour = maxContour
+                maxArea = area
+                maxContour = cnt
+
+        M = cv2.moments(maxContour)
+        rect = cv2.minAreaRect(maxContour)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+        cv2.drawContours(copy, [box], 0, (0, 0, 255), 2)
+
+        M = cv2.moments(secondContour)
+        rect = cv2.minAreaRect(secondContour)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+        cv2.drawContours(copy, [box], 0, (0, 0, 255), 2)
+        cv2.imshow("convexShape", copy)
+
+    def findBiggestConvexShapeDeficit(self, image):
+        img = cv2.bitwise_and(image, image)
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray,(5,5),0)
+
+        _, contours, hierarchy = cv2.findContours(gray,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        drawing = np.zeros(img.shape,np.uint8)
+
+        max_area=0
+
+        for i in range(len(contours)):
+                cnt=contours[i]
+                area = cv2.contourArea(cnt)
+                if(area>max_area):
+                    max_area=area
+                    ci=i
+        cnt=contours[ci]
+        hull = cv2.convexHull(cnt)
+        prev_hull = cv2.convexHull(cnt)
+        prev_cnt = cnt
+        moments = cv2.moments(cnt)
+        if moments['m00']!=0:
+                    cx = int(moments['m10']/moments['m00']) # cx = M10/M00
+                    cy = int(moments['m01']/moments['m00']) # cy = M01/M00
+
+        centr=(cx,cy)
+        cv2.circle(img,centr,5,[0,0,255],2)
+        cv2.drawContours(drawing,[cnt],0,(0,255,0),2)
+        cv2.drawContours(drawing,[hull],0,(255,0,255),2)
+
+        cnt = cv2.approxPolyDP(cnt,0.01*cv2.arcLength(cnt,True),True)
+        hull = cv2.convexHull(cnt,returnPoints = False)
+
+        if(1):
+                   defects = cv2.convexityDefects(cnt,hull)
+                   print(defects[0])
+                   mind=0
+                   maxd=0
+                   for i in range(defects.shape[0]):
+                        s,e,f,d = defects[i,0]
+                        start = tuple(cnt[s][0])
+                        end = tuple(cnt[e][0])
+                        far = tuple(cnt[f][0])
+                        dist = cv2.pointPolygonTest(cnt,centr,True)
+                        cv2.line(img,start,end,[0,255,0],2)
+                        cv2.circle(img,far,5,[0,0,255],-1)
+                   i=0
+        cv2.imshow('output',drawing)
+        cv2.imshow('input',img)
+        return cx,cy
