@@ -40,8 +40,8 @@ class program(object):
         cv2.imshow('Result frame', compareResult)
 
     def process(self, startingImage):
-        bgrm , mask = self.operations.removeBackground(startingImage, erosion_kernel_size = 15)
-        result, center = self.segmenter.applyColorBasedSegmenetation(bgrm , showIO=True)
+        #bgrm , mask = self.operations.removeBackground(startingImage, erosion_kernel_size = 15)
+        result, center = self.segmenter.applyColorBasedSegmenetation(startingImage , showIO=True)
         if center is not None:
             pass
 #            self.mouseMotionManager.move(center[0], center[1])
