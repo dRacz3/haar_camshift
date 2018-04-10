@@ -15,15 +15,13 @@ The algorithm developed here is a couple of chained transformations to extract e
  - numpy
 
 
-## To run:
+## To run the Haar-Cascade & Camshift based tracking:
 ```console
 $ cd src/
 $ python MainProgram.py
 ```
-
-
- ## Known issues:
- - algorithm cannot detect hand close to the edge and throws an error that is catch via a try block currently.
- - no gesture recognition -> Mouse can only be moved, but cannot interact more.
- - sometimes camshift stick to the forearm / head instead of the palm. Fix: wait a few seconds until it drops, then move your hand to the center until it is recognized.
- 
+## To run the color segmentation based tracking:
+```console
+$ cd src/
+$ python skinColorBasedSegmentation.py
+```
