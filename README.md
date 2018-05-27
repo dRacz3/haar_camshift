@@ -1,7 +1,3 @@
-# image_processing
-Anyag:  
-http://users.nik.uni-obuda.hu/vamossy/GepiLatas2017/  
-http://users.nik.uni-obuda.hu/vamossy/Kepfeldolgozas2017/
 
 ## Purpose
 This is a midterm project for image processing. The goal of the project is to create a camera controlled mouse with an inhomogen background.
